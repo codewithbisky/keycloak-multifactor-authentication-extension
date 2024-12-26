@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- Changeset for creating 'user_accounts' table -->
+    <changeSet id="1" author="mchabanga">
+        <createTable tableName="webauth_user_accounts">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="full_name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+
+        </createTable>
+    </changeSet>
+
+    <!-- Changeset for creating 'webauthn_user_credentials' table -->
+    <changeSet id="2" author="mchabanga">
+        <createTable tableName="webauthn_user_credentials">
+            <column name="id" type="varchar(255)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="public_key_cose" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- Changeset for adding foreign key constraint between 'webauthn_user_credentials' and 'webauth_user_accounts' -->
+    <changeSet id="3" author="mchabanga">
+        <addForeignKeyConstraint
+                baseTableName="webauthn_user_credentials"
+                baseColumnNames="user_id"
+                referencedTableName="webauth_user_accounts"
+                referencedColumnNames="id"
+                constraintName="fk_user_id_to_webauth_user_accounts"
+        />
+    </changeSet>
+
+</databaseChangeLog>
