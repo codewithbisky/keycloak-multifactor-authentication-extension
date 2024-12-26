@@ -41,4 +41,11 @@ public class TwoFactorAuthRestResource {
         return user;
     }
 
+    @Path("webauth/{user_id}")
+    public WebAuthRegistrationResource getWebAuthResource(@PathParam("user_id") final String userid) {
+        final UserModel user = checkPermissionsAndGetUser(userid);
+        return new WebAuthRegistrationResource(session, user);
+    }
+
+
 }
