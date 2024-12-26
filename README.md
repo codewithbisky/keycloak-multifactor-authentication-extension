@@ -20,7 +20,7 @@ Description: Generates 2FA data for a user to setup Totp on user's device.
 
 Method: `GET`
 
-Path: `http://localhost:8080/realms/<your-realm>/manage-2fa/{user_id}/generate-2fa`
+Path: `http://localhost:8080/realms/<your-realm>/two-factor-auth/manage-2fa/{user_id}/generate-2fa`
 
 Response example: 
 ```json
@@ -37,7 +37,7 @@ Description: Submits 2FA data for a user to enable Totp credential for user in K
 
 Method: `POST`
 
-Path: `http://localhost:8080/realms/<your-realm>/manage-2fa/{user_id}/submit-2fa`
+Path: `http://localhost:8080/realms/<your-realm>/two-factor-auth/manage-2fa/{user_id}/submit-2fa`
 
 Request example:
 ```json

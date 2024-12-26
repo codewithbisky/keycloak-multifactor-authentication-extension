@@ -2,24 +2,18 @@ package org.prg.twofactorauth.rest;
 
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
-import org.jboss.resteasy.annotations.cache.NoCache;
 import org.keycloak.credential.CredentialModel;
-import org.keycloak.credential.CredentialProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
-import org.keycloak.models.UserCredentialModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.credential.OTPCredentialModel;
-import org.keycloak.models.credential.PasswordCredentialModel;
 import org.keycloak.models.utils.Base32;
 import org.keycloak.models.utils.HmacOTP;
-import org.keycloak.services.ForbiddenException;
 import org.keycloak.utils.CredentialHelper;
 import org.keycloak.utils.MediaType;
 import org.keycloak.utils.TotpUtils;
 import org.prg.twofactorauth.dto.TwoFactorAuthSecretData;
 import org.prg.twofactorauth.dto.TwoFactorAuthSubmission;
-import org.prg.twofactorauth.dto.TwoFactorAuthVerificationData;
 
 public class User2FAResource {
 
@@ -35,7 +29,6 @@ public class User2FAResource {
 
     @GET
     @Path("generate-2fa")
-    @NoCache
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public Response generate2FA() {
@@ -49,7 +42,6 @@ public class User2FAResource {
 
 
     @POST
-    @NoCache
     @Path("submit-2fa")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
