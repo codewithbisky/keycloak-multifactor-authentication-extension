@@ -20,6 +20,13 @@ public class FidoCredential {
     private UUID userid;
     private String publicKeyCose;
 
+    public FidoCredential(String keyId, String keyType, UUID userid, String publicKeyCose) {
+        this.keyId = keyId;
+        this.keyType = keyType;
+        this.userid = userid;
+        this.publicKeyCose = publicKeyCose;
+    }
+
     public String getKeyId() {
         return keyId;
     }

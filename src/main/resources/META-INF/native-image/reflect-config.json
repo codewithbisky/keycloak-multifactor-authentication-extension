@@ -1,0 +1,17 @@
+[
+  {
+    "name": "com.yubico.webauthn.RelyingParty",
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true
+  },
+  {
+    "name": "com.yubico.webauthn.RelyingPartyIdentity",
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true
+  },
+  {
+    "name": "com.yubico.webauthn.CredentialRepository",
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true
+  }
+]

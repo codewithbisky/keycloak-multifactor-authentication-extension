@@ -12,7 +12,6 @@ import org.prg.twofactorauth.webauthn.model.FidoCredential;
 import java.util.Optional;
 import java.util.Set;
 
-
 public class CredentialRepositoryImpl implements CredentialRepository {
 
 
