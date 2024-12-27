@@ -15,6 +15,7 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.UserModel;
 import org.prg.twofactorauth.dto.RegistrationFinishRequest;
 import org.prg.twofactorauth.dto.RegistrationFinishResponse;
+import org.prg.twofactorauth.dto.RegistrationStartResponse;
 import org.prg.twofactorauth.util.JsonUtils;
 import org.prg.twofactorauth.webauthn.entity.FidoCredentialEntity;
 import org.prg.twofactorauth.webauthn.entity.RegistrationFlowEntity;
@@ -26,6 +27,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.prg.twofactorauth.util.JsonUtils.fromJson;
 import static org.prg.twofactorauth.util.JsonUtils.toJson;
 import static org.prg.twofactorauth.webauthn.domain.RelyingPartyConfiguration.relyingParty;
 
@@ -235,7 +237,8 @@ public class UserServiceImpl implements UserService {
     public RegistrationFinishResponse finishRegistration(RegistrationFinishRequest finishRequest) throws RegistrationFailedException, IOException {
 
 
-        PublicKeyCredentialCreationOptions credentialCreationOptions = PublicKeyCredentialCreationOptions.fromJson(finishRequest.getJsonResponse());
+        RegistrationFlowEntity invalidFlow = findRegistrationFlowById(finishRequest.getFlowId()).orElseThrow(() -> new RuntimeException("Invalid flow"));
+        PublicKeyCredentialCreationOptions credentialCreationOptions = PublicKeyCredentialCreationOptions.fromJson(invalidFlow.getRegistrationResult());
         String string = finishRequest.getCredential();
         Object parsed = JsonUtils.mapper.readValue(string, Object.class);
 

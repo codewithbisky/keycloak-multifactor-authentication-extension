@@ -9,7 +9,6 @@ import java.util.UUID;
 public class RegistrationFinishRequest {
 
     private String flowId;
-    private String jsonResponse;
     private String credential;
 
     public String getFlowId() {
@@ -28,11 +27,5 @@ public class RegistrationFinishRequest {
         this.credential = credential;
     }
 
-    public String getJsonResponse() {
-        return jsonResponse;
-    }
 
-    public void setJsonResponse(String jsonResponse) {
-        this.jsonResponse = jsonResponse;
-    }
 }

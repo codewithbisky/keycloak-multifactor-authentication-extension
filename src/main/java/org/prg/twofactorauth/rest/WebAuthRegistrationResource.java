@@ -53,7 +53,6 @@ public class WebAuthRegistrationResource {
                 this.userService.createOrFindUser(startRequest.getFullName(), startRequest.getEmail());
         PublicKeyCredentialCreationOptions options = createPublicKeyCredentialCreationOptions(user);
         RegistrationStartResponse startResponse = createRegistrationStartResponse(options);
-        startResponse.setJsonResponse(options.toJson());
         logWorkflow(startRequest, startResponse);
 
 
