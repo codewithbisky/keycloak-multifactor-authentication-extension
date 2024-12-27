@@ -15,23 +15,23 @@ import java.util.UUID; /**
  */
 public class UserAccount{
 
-    private UUID id;
+    private String id;
     private String displayName;
     private String email;
     private  Set<FidoCredential> credentials;
 
-    public UserAccount(UUID id, String displayName, String email, Set<FidoCredential> credentials) {
+    public UserAccount(String id, String displayName, String email, Set<FidoCredential> credentials) {
         this.id = id;
         this.displayName = displayName;
         this.email = email;
         this.credentials = credentials;
     }
 
-    public UUID getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(String id) {
         this.id = id;
     }
 

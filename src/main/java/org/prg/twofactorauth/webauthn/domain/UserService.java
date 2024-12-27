@@ -21,7 +21,7 @@ public interface UserService {
      */
     UserAccount createOrFindUser(String displayName, String email);
 
-    Optional<UserAccount> findUserById(UUID userId);
+    Optional<UserAccount> findUserById(String userId);
 
     Optional<UserAccount> findUserEmail(String email);
 

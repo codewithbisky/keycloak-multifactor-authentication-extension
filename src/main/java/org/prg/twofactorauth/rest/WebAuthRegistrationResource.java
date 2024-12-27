@@ -30,11 +30,12 @@ public class WebAuthRegistrationResource {
     private final KeycloakSession session;
     private final UserModel user;
     RelyingParty relyingParty = RelyingPartyConfiguration.relyingParty();
-    UserService userService =new UserServiceImpl();
+    UserService userService;
 
     public WebAuthRegistrationResource(KeycloakSession session, UserModel user) {
         this.session = session;
         this.user = user;
+        userService =new UserServiceImpl(session,user);
     }
 
     @POST
@@ -44,8 +45,7 @@ public class WebAuthRegistrationResource {
     public Response register2FA(final RegistrationStartRequest registrationStartRequest) {
 
         Gson gson = new Gson();
-        System.out.println(gson.toJson(registrationStartRequest));
-        return Response.accepted().entity(userService.findUserById(UUID.randomUUID()).get()).build();
+        return Response.accepted().build();
     }
 
 
@@ -63,7 +63,7 @@ public class WebAuthRegistrationResource {
                 UserIdentity.builder()
                         .name(user.getEmail())
                         .displayName(user.getDisplayName())
-                        .id(YubicoUtils.toByteArray(user.getId()))
+                        .id(YubicoUtils.toByteArray(UUID.fromString(user.getId())))
                         .build();
 
         var authenticatorSelectionCriteria =

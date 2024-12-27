@@ -14,7 +14,7 @@ public class UserAccountEntity {
     @GeneratedValue(generator = "UUID")
     @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
     @Column(name = "id", nullable = false)
-    private UUID id;
+    private String id;
 
     @Column(name = "full_name", nullable = false)
     private String fullName;
@@ -28,11 +28,11 @@ public class UserAccountEntity {
     private Set<FidoCredentialEntity> credentials;
 
     // Getters and Setters
-    public UUID getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(String id) {
         this.id = id;
     }
 

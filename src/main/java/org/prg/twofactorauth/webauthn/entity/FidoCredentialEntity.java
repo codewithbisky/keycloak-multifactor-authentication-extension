@@ -6,8 +6,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-import java.util.UUID;
-
 @Entity
 @Table(name = "webauthn_user_credentials")
 public class FidoCredentialEntity {
@@ -17,7 +15,7 @@ public class FidoCredentialEntity {
     private String id;
 
     @Column(name = "user_id", nullable = false)
-    private UUID userId;
+    private String userId;
 
     @Column(name = "type", nullable = false)
     private String type;
@@ -34,11 +32,11 @@ public class FidoCredentialEntity {
         this.id = id;
     }
 
-    public UUID getUserId() {
+    public String getUserId() {
         return userId;
     }
 
-    public void setUserId(UUID userId) {
+    public void setUserId(String userId) {
         this.userId = userId;
     }
 

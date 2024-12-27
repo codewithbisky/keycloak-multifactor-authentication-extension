@@ -11,6 +11,7 @@ import org.prg.twofactorauth.webauthn.model.FidoCredential;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 public class CredentialRepositoryImpl implements CredentialRepository {
 
@@ -55,7 +56,7 @@ public class CredentialRepositoryImpl implements CredentialRepository {
         try {
             return RegisteredCredential.builder()
                     .credentialId(ByteArray.fromBase64Url(fidoCredential.getKeyId()))
-                    .userHandle(YubicoUtils.toByteArray(fidoCredential.getUserid()))
+                    .userHandle(YubicoUtils.toByteArray(UUID.fromString(fidoCredential.getUserid())))
                     .publicKeyCose(ByteArray.fromBase64Url(fidoCredential.getPublicKeyCose()))
                     .build();
         } catch (Base64UrlException e) {

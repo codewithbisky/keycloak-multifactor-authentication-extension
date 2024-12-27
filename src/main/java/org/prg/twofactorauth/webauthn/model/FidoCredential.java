@@ -17,10 +17,10 @@ public class FidoCredential {
 
     private String keyId;
     private String keyType;
-    private UUID userid;
+    private String userid;
     private String publicKeyCose;
 
-    public FidoCredential(String keyId, String keyType, UUID userid, String publicKeyCose) {
+    public FidoCredential(String keyId, String keyType, String userid, String publicKeyCose) {
         this.keyId = keyId;
         this.keyType = keyType;
         this.userid = userid;
@@ -35,11 +35,11 @@ public class FidoCredential {
         this.keyId = keyId;
     }
 
-    public UUID getUserid() {
+    public String getUserid() {
         return userid;
     }
 
-    public void setUserid(UUID userid) {
+    public void setUserid(String userid) {
         this.userid = userid;
     }
 
