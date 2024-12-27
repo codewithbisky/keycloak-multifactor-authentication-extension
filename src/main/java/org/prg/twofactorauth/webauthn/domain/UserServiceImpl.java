@@ -6,6 +6,7 @@ import jakarta.transaction.Transactional;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.UserModel;
 import org.prg.twofactorauth.webauthn.entity.FidoCredentialEntity;
+import org.prg.twofactorauth.webauthn.entity.RegistrationFlowEntity;
 import org.prg.twofactorauth.webauthn.entity.UserAccountEntity;
 import org.prg.twofactorauth.webauthn.model.FidoCredential;
 import org.prg.twofactorauth.webauthn.model.UserAccount;
@@ -19,9 +20,11 @@ public class UserServiceImpl implements UserService {
 
     private final KeycloakSession keycloakSession;
     private final UserModel user;
-    public UserServiceImpl(KeycloakSession keycloakSession,UserModel user) {
+    private final EntityManager entityManager;
+    public UserServiceImpl(KeycloakSession keycloakSession,UserModel user,EntityManager entityManager) {
         this.keycloakSession = keycloakSession;
         this.user = user;
+        this.entityManager = entityManager;
     }
 
     @Override
@@ -40,7 +43,7 @@ public class UserServiceImpl implements UserService {
     }
 
     public void insertFidoCredential(FidoCredentialEntity fidoCredentialEntity) {
-        try (EntityManager entityManager = DbUtil.getEntityManager(keycloakSession)) {
+        try {
             entityManager.getTransaction().begin();
 
             // Native insert query
@@ -59,7 +62,7 @@ public class UserServiceImpl implements UserService {
             // Commit transaction
             entityManager.getTransaction().commit();
         } catch (Exception e) {
-            System.out.println("Error during native insert: " + e);
+            System.out.println("(insertFidoCredential) Error during native insert: " + e);
         }
     }
 
@@ -71,7 +74,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Optional<UserAccount> findUserById(String userId) {
-        try (EntityManager entityManager = DbUtil.getEntityManager(keycloakSession)) {
+        try  {
             // Using native query to fetch the user account entity
             Query query = entityManager.createNativeQuery(
                     "SELECT * FROM webauth_user_accounts WHERE id = :id", UserAccountEntity.class);
@@ -91,7 +94,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public Optional<UserAccount> findUserEmail(String email) {
 
-        try (EntityManager entityManager = DbUtil.getEntityManager(keycloakSession)) {
+        try  {
             // Using native query to fetch the user account entity
             Query query = entityManager.createNativeQuery(
                     "SELECT * FROM webauth_user_accounts WHERE email = :email", UserAccountEntity.class);
@@ -157,7 +160,7 @@ public class UserServiceImpl implements UserService {
 
             return findUserById(result.getId()).get();
         } catch (Exception e) {
-            System.out.println("Error during native insert: " + e);
+            System.out.println("(saveUserAccount) Error during native insert: " + e);
         }
         return null;
     }
@@ -178,4 +181,35 @@ public class UserServiceImpl implements UserService {
                 accountEntity.getId(), accountEntity.getFullName(), accountEntity.getEmail(), credentials);
     }
 
+
+
+    public void insertRegistrationFlow(RegistrationFlowEntity registrationFlowEntity) {
+        try {
+            entityManager.getTransaction().begin(); // Start transaction
+            // Native insert query
+            Query query = entityManager.createNativeQuery(
+                    "INSERT INTO webauthn_registration_flow " +
+                            "(id, start_request, start_response, finish_request, finish_response, yubico_reg_result, yubico_creation_options) " +
+                            "VALUES (:id, :startRequest, :startResponse, :finishRequest, :finishResponse, :registrationResult, :creationOptions)");
+
+            // Set parameters for the query
+            query.setParameter("id", registrationFlowEntity.getId());
+            query.setParameter("startRequest", registrationFlowEntity.getStartRequest());
+            query.setParameter("startResponse", registrationFlowEntity.getStartResponse());
+            query.setParameter("finishRequest", registrationFlowEntity.getFinishRequest());
+            query.setParameter("finishResponse", registrationFlowEntity.getFinishResponse());
+            query.setParameter("registrationResult", registrationFlowEntity.getRegistrationResult());
+            query.setParameter("creationOptions", registrationFlowEntity.getCreationOptions());
+
+            // Execute update
+            query.executeUpdate();
+
+            // Commit transaction
+            entityManager.getTransaction().commit();
+        } catch (Exception e) {
+            System.out.println("(insertRegistrationFlow) Error during native insert: " + e.getMessage());
+            e.printStackTrace();
+
+        }
+    }
 }

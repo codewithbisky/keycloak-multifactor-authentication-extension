@@ -8,14 +8,14 @@ import java.util.UUID;
 
 @JsonInclude(Include.NON_NULL)
 public class RegistrationStartResponse {
-  private UUID flowId;
+  private String flowId;
   private PublicKeyCredentialCreationOptions credentialCreationOptions;
 
-  public UUID getFlowId() {
+  public String getFlowId() {
     return flowId;
   }
 
-  public void setFlowId(UUID flowId) {
+  public void setFlowId(String flowId) {
     this.flowId = flowId;
   }
 

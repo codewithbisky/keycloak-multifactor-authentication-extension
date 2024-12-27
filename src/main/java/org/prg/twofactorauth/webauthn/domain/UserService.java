@@ -1,5 +1,6 @@
 package org.prg.twofactorauth.webauthn.domain;
 
+import org.prg.twofactorauth.webauthn.entity.RegistrationFlowEntity;
 import org.prg.twofactorauth.webauthn.model.FidoCredential;
 import org.prg.twofactorauth.webauthn.model.UserAccount;
 
@@ -33,5 +34,5 @@ public interface UserService {
     void addCredential(FidoCredential fidoCredential);
 
     Optional<FidoCredential> findCredentialById(String credentialId);
-
+    void insertRegistrationFlow(RegistrationFlowEntity registrationFlowEntity);
 }

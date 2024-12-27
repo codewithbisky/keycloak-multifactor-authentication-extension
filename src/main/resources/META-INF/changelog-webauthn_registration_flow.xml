@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="271220241623" author="mchabanga">
+        <createTable tableName="webauthn_registration_flow">
+            <column name="id" type="VARCHAR(255)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="start_request" type="TEXT"/>
+            <column name="start_response" type="TEXT"/>
+            <column name="finish_request" type="TEXT"/>
+            <column name="finish_response" type="TEXT"/>
+            <column name="yubico_reg_result" type="TEXT"/>
+            <column name="yubico_creation_options" type="TEXT"/>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

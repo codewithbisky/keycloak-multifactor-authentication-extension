@@ -6,6 +6,8 @@ import org.keycloak.models.UserModel;
 import org.keycloak.services.managers.AppAuthManager;
 import org.keycloak.services.managers.AuthenticationManager;
 
+import java.sql.SQLException;
+
 public class TwoFactorAuthRestResource {
 
 	private final KeycloakSession session;
@@ -42,7 +44,7 @@ public class TwoFactorAuthRestResource {
     }
 
     @Path("webauth/{user_id}")
-    public WebAuthRegistrationResource getWebAuthResource(@PathParam("user_id") final String userid) {
+    public WebAuthRegistrationResource getWebAuthResource(@PathParam("user_id") final String userid) throws SQLException {
         final UserModel user = checkPermissionsAndGetUser(userid);
         return new WebAuthRegistrationResource(session, user);
     }
