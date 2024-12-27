@@ -41,9 +41,7 @@ public class CredentialRepositoryImpl implements CredentialRepository {
     @Override
     public Optional<ByteArray> getUserHandleForUsername(String username) {
 
-        var result =
-                this.userService.findUserEmail(username).map(user -> YubicoUtils.toByteArray(UUID.fromString(user.getId())));
-        return result;
+        return this.userService.findUserEmail(username).map(user -> YubicoUtils.toByteArray(UUID.fromString(user.getId())));
     }
 
     @Override
@@ -51,7 +49,9 @@ public class CredentialRepositoryImpl implements CredentialRepository {
         if (userHandle.isEmpty()) {
             return Optional.empty();
         }
-        return null;
+        return this.userService
+                .findUserById(YubicoUtils.toUUID(userHandle).toString())
+                .map(userAccount -> userAccount.getEmail());
     }
 
     @Override

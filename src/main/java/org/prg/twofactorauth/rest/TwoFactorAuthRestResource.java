@@ -10,13 +10,13 @@ import java.sql.SQLException;
 
 public class TwoFactorAuthRestResource {
 
-	private final KeycloakSession session;
+    private final KeycloakSession session;
     private final AuthenticationManager.AuthResult auth;
-	
-	public TwoFactorAuthRestResource(KeycloakSession session) {
-		this.session = session;
+
+    public TwoFactorAuthRestResource(KeycloakSession session) {
+        this.session = session;
         this.auth = new AppAuthManager.BearerTokenAuthenticator(session).authenticate();
-	}
+    }
 
     // Same like "companies" endpoint, but REST endpoint is authenticated with Bearer token and user must be in realm role "admin"
     // Just for illustration purposes
@@ -47,6 +47,11 @@ public class TwoFactorAuthRestResource {
     public WebAuthRegistrationResource getWebAuthResource(@PathParam("user_id") final String userid) throws SQLException {
         final UserModel user = checkPermissionsAndGetUser(userid);
         return new WebAuthRegistrationResource(session, user);
+    }
+
+    @Path("webauth/login")
+    public WebAuthLoginResource login() throws SQLException {
+        return new WebAuthLoginResource(session);
     }
 
 

@@ -1,11 +1,9 @@
 package org.prg.twofactorauth.webauthn.domain;
 
-import com.yubico.webauthn.FinishRegistrationOptions;
-import com.yubico.webauthn.RegistrationResult;
-import com.yubico.webauthn.data.AuthenticatorAttestationResponse;
-import com.yubico.webauthn.data.ClientRegistrationExtensionOutputs;
-import com.yubico.webauthn.data.PublicKeyCredential;
-import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.yubico.webauthn.*;
+import com.yubico.webauthn.data.*;
+import com.yubico.webauthn.exception.AssertionFailedException;
 import com.yubico.webauthn.exception.RegistrationFailedException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
@@ -13,11 +11,10 @@ import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.UserModel;
-import org.prg.twofactorauth.dto.RegistrationFinishRequest;
-import org.prg.twofactorauth.dto.RegistrationFinishResponse;
-import org.prg.twofactorauth.dto.RegistrationStartResponse;
+import org.prg.twofactorauth.dto.*;
 import org.prg.twofactorauth.util.JsonUtils;
 import org.prg.twofactorauth.webauthn.entity.FidoCredentialEntity;
+import org.prg.twofactorauth.webauthn.entity.LoginFlowEntity;
 import org.prg.twofactorauth.webauthn.entity.RegistrationFlowEntity;
 import org.prg.twofactorauth.webauthn.entity.UserAccountEntity;
 import org.prg.twofactorauth.webauthn.model.FidoCredential;
@@ -27,7 +24,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.prg.twofactorauth.util.JsonUtils.fromJson;
 import static org.prg.twofactorauth.util.JsonUtils.toJson;
 import static org.prg.twofactorauth.webauthn.domain.RelyingPartyConfiguration.relyingParty;
 
@@ -359,5 +355,144 @@ public class UserServiceImpl implements UserService {
             return new ArrayList<>();
         }
     }
+
+
+    @Transactional
+    public LoginStartResponse startLogin(LoginStartRequest loginStartRequest) throws JsonProcessingException {
+
+        // Find the user in the user database
+        UserAccount user =
+                findUserEmail(loginStartRequest.getEmail())
+                        .orElseThrow(() -> new RuntimeException("Email does not exist"));
+
+        // make the assertion request to send to the client
+        StartAssertionOptions options =
+                StartAssertionOptions.builder()
+                        .timeout(60_000)
+                        .username(loginStartRequest.getEmail())
+//                             .userHandle(YubicoUtils.toByteArray(UUID.fromString(user.getId())))
+                        .build();
+        AssertionRequest assertionRequest = relyingParty(this).startAssertion(options);
+
+        LoginStartResponse loginStartResponse = new LoginStartResponse();
+        loginStartResponse.setFlowId(UUID.randomUUID().toString());
+        loginStartResponse.setAssertionRequest(assertionRequest);
+
+        LoginFlowEntity loginFlowEntity = new LoginFlowEntity();
+        loginFlowEntity.setId(loginStartResponse.getFlowId());
+        loginFlowEntity.setStartRequest(toJson(loginStartRequest));
+        loginFlowEntity.setStartResponse(toJson(loginStartResponse));
+        loginFlowEntity.setUsername(loginStartRequest.getEmail());
+        loginFlowEntity.setAssertionRequest(assertionRequest.toJson());
+        saveLoginFlowEntityNative(loginFlowEntity);
+        return loginStartResponse;
+    }
+
+    public void saveLoginFlowEntityNative(LoginFlowEntity loginFlowEntity) {
+        try {
+            // Begin transaction
+            entityManager.getTransaction().begin();
+
+            // Execute native SQL insert
+            String sql = "INSERT INTO webauthn_login_flow " +
+                    "(id, start_request, start_response, successful_login, assertion_request, assertion_result, user_name) " +
+                    "VALUES (:id, :startRequest, :startResponse, :successfulLogin, :assertionRequest, :assertionResult, :username)";
+
+            Query query = entityManager.createNativeQuery(sql);
+            query.setParameter("id", loginFlowEntity.getId());
+            query.setParameter("startRequest", loginFlowEntity.getStartRequest());
+            query.setParameter("startResponse", loginFlowEntity.getStartResponse());
+            query.setParameter("successfulLogin", loginFlowEntity.getSuccessfulLogin());
+            query.setParameter("assertionRequest", loginFlowEntity.getAssertionRequest());
+            query.setParameter("assertionResult", loginFlowEntity.getAssertionResult());
+            query.setParameter("username", loginFlowEntity.getUsername());
+
+            query.executeUpdate();
+
+            // Commit the transaction
+            entityManager.getTransaction().commit();
+        } catch (Exception e) {
+            logger.error("(saveLoginFlowEntityNative) Error during save: " + e);
+        }
+    }
+
+    public Optional<LoginFlowEntity> findLoginFlowById(String userId) {
+        try {
+            // Using native query to fetch the user account entity
+            Query query = entityManager.createNativeQuery(
+                    "SELECT * FROM webauthn_login_flow WHERE id = :id", LoginFlowEntity.class);
+            query.setParameter("id", userId);
+            List<LoginFlowEntity> results = query.getResultList();
+            if (results.isEmpty()) {
+                return Optional.empty();
+            }
+            return Optional.of(results.get(0));
+        } catch (Exception e) {
+            logger.error("Error occurred: " + e);
+            return Optional.empty();
+        }
+    }
+
+    @Transactional
+    public Map<String, Object> finishLogin(LoginFinishRequest loginFinishRequest) throws IOException, AssertionFailedException {
+
+        var loginFlowEntity =
+                findLoginFlowById(loginFinishRequest.getFlowId())
+                        .orElseThrow(
+                                () ->
+                                        new RuntimeException(
+                                                "flow id " + loginFinishRequest.getFlowId() + " not found"));
+
+
+        var assertionRequestJson = loginFlowEntity.getAssertionRequest();
+        AssertionRequest assertionRequest;
+        assertionRequest = AssertionRequest.fromJson(assertionRequestJson);
+        String string = loginFinishRequest.getCredential();
+        Object parsed = JsonUtils.mapper.readValue(string, Object.class);
+
+        String string1 = JsonUtils.mapper.writerWithDefaultPrettyPrinter().writeValueAsString(parsed);
+        PublicKeyCredential<AuthenticatorAssertionResponse, ClientAssertionExtensionOutputs> pkc = null;
+        pkc = PublicKeyCredential.parseAssertionResponseJson(string1);
+        FinishAssertionOptions options =
+                FinishAssertionOptions.builder()
+                        .request(assertionRequest)
+                        .response(pkc)
+                        .build();
+
+        AssertionResult assertionResult = relyingParty(this).finishAssertion(options);
+        loginFlowEntity.setAssertionResult(toJson(assertionResult));
+        loginFlowEntity.setSuccessfulLogin(assertionResult.isSuccess());
+        updateLoginFlowEntityNative(loginFlowEntity.getId(), loginFlowEntity.getAssertionResult(), loginFlowEntity.getSuccessfulLogin());
+        Map<String, Object> results = new HashMap<>();
+        results.put("success", true);
+        //todo bearer token
+        return results;
+    }
+
+    public void updateLoginFlowEntityNative(String id, String assertionResult, boolean successfulLogin) {
+        try {
+            // Begin transaction
+            entityManager.getTransaction().begin();
+
+            // Execute native SQL update
+            String sql = "UPDATE webauthn_login_flow " +
+                    "SET assertion_result = :assertionResult, successful_login = :successfulLogin " +
+                    "WHERE id = :id";
+
+            Query query = entityManager.createNativeQuery(sql);
+            query.setParameter("id", id);
+            query.setParameter("assertionResult", assertionResult);
+            query.setParameter("successfulLogin", successfulLogin);
+
+            query.executeUpdate();
+
+            // Commit the transaction
+            entityManager.getTransaction().commit();
+        } catch (Exception e) {
+            logger.error("(updateLoginFlowEntityNative) Error during update: " + e);
+
+        }
+    }
+
 
 }

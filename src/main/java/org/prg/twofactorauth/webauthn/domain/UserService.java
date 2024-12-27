@@ -1,14 +1,16 @@
 package org.prg.twofactorauth.webauthn.domain;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions;
+import com.yubico.webauthn.exception.AssertionFailedException;
 import com.yubico.webauthn.exception.RegistrationFailedException;
-import org.prg.twofactorauth.dto.RegistrationFinishRequest;
-import org.prg.twofactorauth.dto.RegistrationFinishResponse;
+import org.prg.twofactorauth.dto.*;
 import org.prg.twofactorauth.webauthn.entity.RegistrationFlowEntity;
 import org.prg.twofactorauth.webauthn.model.FidoCredential;
 import org.prg.twofactorauth.webauthn.model.UserAccount;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -42,4 +44,6 @@ public interface UserService {
     void insertRegistrationFlow(RegistrationFlowEntity registrationFlowEntity);
 
     RegistrationFinishResponse finishRegistration(RegistrationFinishRequest request) throws RegistrationFailedException, IOException;
+    LoginStartResponse startLogin(LoginStartRequest loginStartRequest) throws JsonProcessingException;
+    Map<String,Object> finishLogin(LoginFinishRequest loginFinishRequest) throws IOException, AssertionFailedException;
 }
