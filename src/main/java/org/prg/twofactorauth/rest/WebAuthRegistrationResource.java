@@ -1,16 +1,11 @@
 package org.prg.twofactorauth.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.gson.Gson;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.yubico.webauthn.RelyingParty;
 import com.yubico.webauthn.StartRegistrationOptions;
-import com.yubico.webauthn.data.AuthenticatorSelectionCriteria;
-import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions;
-import com.yubico.webauthn.data.UserIdentity;
-import com.yubico.webauthn.data.UserVerificationRequirement;
+import com.yubico.webauthn.data.*;
 import com.yubico.webauthn.exception.RegistrationFailedException;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.Query;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -28,20 +23,24 @@ import org.prg.twofactorauth.webauthn.domain.*;
 import org.prg.twofactorauth.webauthn.entity.RegistrationFlowEntity;
 import org.prg.twofactorauth.webauthn.model.UserAccount;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.UUID;
+
+import static org.prg.twofactorauth.util.JsonUtils.toJson;
 
 public class WebAuthRegistrationResource {
 
     private final KeycloakSession session;
     private final UserModel user;
-    RelyingParty relyingParty = RelyingPartyConfiguration.relyingParty();
+    RelyingParty relyingParty ;
     UserService userService;
 
     public WebAuthRegistrationResource(KeycloakSession session, UserModel user) throws SQLException {
         this.session = session;
         this.user = user;
         userService =new UserServiceImpl(session,user, DbUtil.getEntityManager(session));
+        relyingParty = RelyingPartyConfiguration.relyingParty(userService);
     }
 
     @POST
@@ -54,8 +53,9 @@ public class WebAuthRegistrationResource {
                 this.userService.createOrFindUser(startRequest.getFullName(), startRequest.getEmail());
         PublicKeyCredentialCreationOptions options = createPublicKeyCredentialCreationOptions(user);
         RegistrationStartResponse startResponse = createRegistrationStartResponse(options);
-
+        startResponse.setJsonResponse(options.toJson());
         logWorkflow(startRequest, startResponse);
+
 
         return Response.accepted().entity(startResponse).build();
     }
@@ -63,10 +63,11 @@ public class WebAuthRegistrationResource {
     @Path("register/finish")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response registerFinish(final RegistrationFinishRequest request) throws JsonProcessingException, RegistrationFailedException {
+    public Response registerFinish(final RegistrationFinishRequest request) throws RegistrationFailedException, IOException {
 
-        RegistrationStartResponse response =request.getStartRequest();
-        RegistrationFinishResponse result = this.userService.finishRegistration(request, response.getCredentialCreationOptions());
+
+
+        RegistrationFinishResponse result = this.userService.finishRegistration(request);
         return Response.accepted().entity(result).build();
     }
 
@@ -101,10 +102,7 @@ public class WebAuthRegistrationResource {
                         .build();
 
 
-        PublicKeyCredentialCreationOptions options =
-                this.relyingParty.startRegistration(startRegistrationOptions);
-
-        return options;
+        return this.relyingParty.startRegistration(startRegistrationOptions);
     }
 
 
@@ -112,8 +110,8 @@ public class WebAuthRegistrationResource {
             RegistrationStartRequest startRequest, RegistrationStartResponse startResponse) throws JsonProcessingException {
         RegistrationFlowEntity registrationEntity = new RegistrationFlowEntity();
         registrationEntity.setId(startResponse.getFlowId());
-        registrationEntity.setStartRequest(JsonUtils.toJson(startRequest));
-        registrationEntity.setStartResponse(JsonUtils.toJson(startResponse));
+        registrationEntity.setStartRequest(toJson(startRequest));
+        registrationEntity.setStartResponse(toJson(startResponse));
         registrationEntity.setRegistrationResult(startResponse.getCredentialCreationOptions().toJson());
         userService.insertRegistrationFlow(registrationEntity);
     }

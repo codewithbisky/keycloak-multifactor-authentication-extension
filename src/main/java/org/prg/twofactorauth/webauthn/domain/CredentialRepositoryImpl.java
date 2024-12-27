@@ -12,22 +12,38 @@ import org.prg.twofactorauth.webauthn.model.FidoCredential;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class CredentialRepositoryImpl implements CredentialRepository {
 
+    private  UserService userService;
+
+    public CredentialRepositoryImpl(UserService userService) {
+        this.userService = userService;
+    }
 
     @Override
     public Set<PublicKeyCredentialDescriptor> getCredentialIdsForUsername(String username) {
 
         // in our implementation the usernames are email addresses
 
-        return null;
+
+        return this.userService
+                .findUserEmail(username)
+                .map(
+                        user ->
+                                user.getCredentials().stream()
+                                        .map(CredentialRepositoryImpl::toPublicKeyCredentialDescriptor)
+                                        .collect(Collectors.toSet()))
+                .orElse(Set.of());
     }
 
     @Override
     public Optional<ByteArray> getUserHandleForUsername(String username) {
 
-        return null;
+        var result =
+                this.userService.findUserEmail(username).map(user -> YubicoUtils.toByteArray(UUID.fromString(user.getId())));
+        return result;
     }
 
     @Override
@@ -43,13 +59,27 @@ public class CredentialRepositoryImpl implements CredentialRepository {
         // user can have muliple credentials so we are looking first for the user,
         // then for a credential that matches;
 
-        return null;
+        return this.userService
+                .findUserById(YubicoUtils.toUUID(userHandle).toString())
+                .map(user -> user.getCredentials())
+                .orElse(Set.of())
+                .stream()
+                .filter(
+                        cred -> {
+                            try {
+                                return credentialId.equals(ByteArray.fromBase64Url(cred.getKeyId()));
+                            } catch (Base64UrlException e) {
+                                throw new RuntimeException(e);
+                            }
+                        })
+                .findFirst()
+                .map(CredentialRepositoryImpl::toRegisteredCredential);
     }
 
     @Override
     public Set<RegisteredCredential> lookupAll(ByteArray credentialId) {
 
-        return null;
+        return Set.of();
     }
 
     private static RegisteredCredential toRegisteredCredential(FidoCredential fidoCredential) {

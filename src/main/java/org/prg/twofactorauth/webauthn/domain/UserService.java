@@ -8,6 +8,7 @@ import org.prg.twofactorauth.webauthn.entity.RegistrationFlowEntity;
 import org.prg.twofactorauth.webauthn.model.FidoCredential;
 import org.prg.twofactorauth.webauthn.model.UserAccount;
 
+import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -40,5 +41,5 @@ public interface UserService {
     Optional<FidoCredential> findCredentialById(String credentialId);
     void insertRegistrationFlow(RegistrationFlowEntity registrationFlowEntity);
 
-    RegistrationFinishResponse finishRegistration(RegistrationFinishRequest request, PublicKeyCredentialCreationOptions credentialCreationOptions) throws RegistrationFailedException;
+    RegistrationFinishResponse finishRegistration(RegistrationFinishRequest request) throws RegistrationFailedException, IOException;
 }

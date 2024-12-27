@@ -9,6 +9,7 @@ import java.util.UUID;
 @JsonInclude(Include.NON_NULL)
 public class RegistrationStartResponse {
   private String flowId;
+  private String jsonResponse;
   private PublicKeyCredentialCreationOptions credentialCreationOptions;
 
   public String getFlowId() {
@@ -26,5 +27,13 @@ public class RegistrationStartResponse {
   public void setCredentialCreationOptions(
       PublicKeyCredentialCreationOptions credentialCreationOptions) {
     this.credentialCreationOptions = credentialCreationOptions;
+  }
+
+  public String getJsonResponse() {
+    return jsonResponse;
+  }
+
+  public void setJsonResponse(String jsonResponse) {
+    this.jsonResponse = jsonResponse;
   }
 }

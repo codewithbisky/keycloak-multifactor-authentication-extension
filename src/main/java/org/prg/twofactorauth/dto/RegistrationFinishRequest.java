@@ -4,37 +4,35 @@ import com.yubico.webauthn.data.AuthenticatorAttestationResponse;
 import com.yubico.webauthn.data.ClientRegistrationExtensionOutputs;
 import com.yubico.webauthn.data.PublicKeyCredential;
 
+import java.util.UUID;
+
 public class RegistrationFinishRequest {
 
-  private String flowId;
-  private PublicKeyCredential<AuthenticatorAttestationResponse, ClientRegistrationExtensionOutputs>
-      credential;
-  private RegistrationStartResponse startRequest;
+    private String flowId;
+    private String jsonResponse;
+    private String credential;
 
-  public String getFlowId() {
-    return flowId;
-  }
+    public String getFlowId() {
+        return flowId;
+    }
 
-  public void setFlowId(String flowId) {
-    this.flowId = flowId;
-  }
+    public void setFlowId(String flowId) {
+        this.flowId = flowId;
+    }
 
-  public PublicKeyCredential<AuthenticatorAttestationResponse, ClientRegistrationExtensionOutputs>
-      getCredential() {
-    return credential;
-  }
+    public String getCredential() {
+        return credential;
+    }
 
-  public void setCredential(
-      PublicKeyCredential<AuthenticatorAttestationResponse, ClientRegistrationExtensionOutputs>
-          credential) {
-    this.credential = credential;
-  }
+    public void setCredential(String credential) {
+        this.credential = credential;
+    }
 
-  public RegistrationStartResponse getStartRequest() {
-    return startRequest;
-  }
+    public String getJsonResponse() {
+        return jsonResponse;
+    }
 
-  public void setStartRequest(RegistrationStartResponse startRequest) {
-    this.startRequest = startRequest;
-  }
+    public void setJsonResponse(String jsonResponse) {
+        this.jsonResponse = jsonResponse;
+    }
 }

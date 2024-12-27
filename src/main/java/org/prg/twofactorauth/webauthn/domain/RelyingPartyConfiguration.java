@@ -20,11 +20,10 @@ public class RelyingPartyConfiguration {
      */
 
     private static RelyingParty relyingParty;
-    public static RelyingParty relyingParty() {
-
+    public static RelyingParty relyingParty(UserService userService) {
 
         if(relyingParty!=null) return relyingParty;
-        CredentialRepositoryImpl credentialRepositoryImpl = new CredentialRepositoryImpl();
+        CredentialRepositoryImpl credentialRepositoryImpl = new CredentialRepositoryImpl(userService);
         RelyingPartyIdentity rpIdentity =
                 RelyingPartyIdentity.builder()
                         .id("localhost") // Set this to a parent domain that covers all subdomains// where

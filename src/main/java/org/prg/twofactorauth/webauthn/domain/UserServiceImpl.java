@@ -2,11 +2,15 @@ package org.prg.twofactorauth.webauthn.domain;
 
 import com.yubico.webauthn.FinishRegistrationOptions;
 import com.yubico.webauthn.RegistrationResult;
+import com.yubico.webauthn.data.AuthenticatorAttestationResponse;
+import com.yubico.webauthn.data.ClientRegistrationExtensionOutputs;
+import com.yubico.webauthn.data.PublicKeyCredential;
 import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions;
 import com.yubico.webauthn.exception.RegistrationFailedException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.transaction.Transactional;
+import org.jboss.logging.Logger;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.UserModel;
 import org.prg.twofactorauth.dto.RegistrationFinishRequest;
@@ -18,12 +22,15 @@ import org.prg.twofactorauth.webauthn.entity.UserAccountEntity;
 import org.prg.twofactorauth.webauthn.model.FidoCredential;
 import org.prg.twofactorauth.webauthn.model.UserAccount;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.prg.twofactorauth.util.JsonUtils.toJson;
 import static org.prg.twofactorauth.webauthn.domain.RelyingPartyConfiguration.relyingParty;
 
 public class UserServiceImpl implements UserService {
+    private static final Logger logger = Logger.getLogger(UserServiceImpl.class);
 
     private final KeycloakSession keycloakSession;
     private final UserModel user;
@@ -173,7 +180,7 @@ public class UserServiceImpl implements UserService {
         return null;
     }
 
-    private  UserAccount toUserAccount(UserAccountEntity accountEntity) {
+    private UserAccount toUserAccount(UserAccountEntity accountEntity) {
 
 
         List<FidoCredentialEntity> credentialsByUserId = findCredentialsByUserId(accountEntity.getId());
@@ -225,15 +232,30 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public RegistrationFinishResponse finishRegistration(RegistrationFinishRequest finishRequest, PublicKeyCredentialCreationOptions credentialCreationOptions) throws RegistrationFailedException {
+    public RegistrationFinishResponse finishRegistration(RegistrationFinishRequest finishRequest) throws RegistrationFailedException, IOException {
 
 
+        PublicKeyCredentialCreationOptions credentialCreationOptions = PublicKeyCredentialCreationOptions.fromJson(finishRequest.getJsonResponse());
+        String string = finishRequest.getCredential();
+        Object parsed = JsonUtils.mapper.readValue(string, Object.class);
+
+        String string1 = JsonUtils.mapper.writerWithDefaultPrettyPrinter().writeValueAsString(parsed);
+        PublicKeyCredential<AuthenticatorAttestationResponse, ClientRegistrationExtensionOutputs> pkc = null;
+
+        try {
+            pkc = PublicKeyCredential.parseRegistrationResponseJson(string1);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
         FinishRegistrationOptions options =
                 FinishRegistrationOptions.builder()
                         .request(credentialCreationOptions)
-                        .response(finishRequest.getCredential())
+                        .response(pkc)
                         .build();
-        RegistrationResult registrationResult = relyingParty().finishRegistration(options);
+
+        RegistrationResult registrationResult = relyingParty(this).finishRegistration(options);
 
         var fidoCredential =
                 new FidoCredential(
@@ -262,10 +284,10 @@ public class UserServiceImpl implements UserService {
                                         new RuntimeException(
                                                 "Cloud not find a registration flow with id: "
                                                         + finishRequest.getFlowId()));
-        registrationFlow.setFinishRequest(JsonUtils.toJson(finishRequest));
-        registrationFlow.setFinishResponse(JsonUtils.toJson(registrationFinishResponse));
-        registrationFlow.setRegistrationResult(JsonUtils.toJson(registrationResult));
-        updateRegistrationFlow(registrationFlow, JsonUtils.toJson(finishRequest), JsonUtils.toJson(registrationFinishResponse), JsonUtils.toJson(registrationResult));
+        registrationFlow.setFinishRequest(toJson(finishRequest));
+        registrationFlow.setFinishResponse(toJson(registrationFinishResponse));
+        registrationFlow.setRegistrationResult(toJson(registrationResult));
+        updateRegistrationFlow(registrationFlow, toJson(finishRequest), toJson(registrationFinishResponse), toJson(registrationResult));
     }
 
     public Optional<RegistrationFlowEntity> findRegistrationFlowById(String userId) {
@@ -289,9 +311,9 @@ public class UserServiceImpl implements UserService {
                                        String registrationFinishResponse, String registrationResult) {
         try {
             // Update the entity with new JSON string values
-            registrationFlow.setFinishRequest(JsonUtils.toJson(finishRequest));
-            registrationFlow.setFinishResponse(JsonUtils.toJson(registrationFinishResponse));
-            registrationFlow.setRegistrationResult(JsonUtils.toJson(registrationResult));
+            registrationFlow.setFinishRequest(toJson(finishRequest));
+            registrationFlow.setFinishResponse(toJson(registrationFinishResponse));
+            registrationFlow.setRegistrationResult(toJson(registrationResult));
 
             // Native update query to update the RegistrationFlowEntity
             Query query = entityManager.createNativeQuery(
@@ -318,7 +340,7 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    public  List<FidoCredentialEntity> findCredentialsByUserId(String userId) {
+    public List<FidoCredentialEntity> findCredentialsByUserId(String userId) {
         try {
             // Using native query to fetch the user account entity
             Query query = entityManager.createNativeQuery(
