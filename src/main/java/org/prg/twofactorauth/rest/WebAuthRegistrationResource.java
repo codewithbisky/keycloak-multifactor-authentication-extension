@@ -42,10 +42,16 @@ public class WebAuthRegistrationResource {
     @Path("register/start")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response register2FA(final RegistrationStartRequest registrationStartRequest) {
+    public Response register2FA(final RegistrationStartRequest startRequest) {
 
-        Gson gson = new Gson();
-        return Response.accepted().build();
+        UserAccount user =
+                this.userService.createOrFindUser(startRequest.getFullName(), startRequest.getEmail());
+        PublicKeyCredentialCreationOptions options = createPublicKeyCredentialCreationOptions(user);
+        RegistrationStartResponse startResponse = createRegistrationStartResponse(options);
+
+        //todo logWorkflow(startRequest, startResponse);
+
+        return Response.accepted().entity(startResponse).build();
     }
 
 
