@@ -8,6 +8,7 @@ import com.yubico.webauthn.data.AuthenticatorSelectionCriteria;
 import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions;
 import com.yubico.webauthn.data.UserIdentity;
 import com.yubico.webauthn.data.UserVerificationRequirement;
+import com.yubico.webauthn.exception.RegistrationFailedException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.ws.rs.Consumes;
@@ -18,6 +19,8 @@ import jakarta.ws.rs.core.Response;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.UserModel;
 import org.keycloak.utils.MediaType;
+import org.prg.twofactorauth.dto.RegistrationFinishRequest;
+import org.prg.twofactorauth.dto.RegistrationFinishResponse;
 import org.prg.twofactorauth.dto.RegistrationStartRequest;
 import org.prg.twofactorauth.dto.RegistrationStartResponse;
 import org.prg.twofactorauth.util.JsonUtils;
@@ -45,7 +48,7 @@ public class WebAuthRegistrationResource {
     @Path("register/start")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response register2FA(final RegistrationStartRequest startRequest) throws JsonProcessingException {
+    public Response registerStart(final RegistrationStartRequest startRequest) throws JsonProcessingException {
 
         UserAccount user =
                 this.userService.createOrFindUser(startRequest.getFullName(), startRequest.getEmail());
@@ -55,6 +58,16 @@ public class WebAuthRegistrationResource {
         logWorkflow(startRequest, startResponse);
 
         return Response.accepted().entity(startResponse).build();
+    }
+    @POST
+    @Path("register/finish")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response registerFinish(final RegistrationFinishRequest request) throws JsonProcessingException, RegistrationFailedException {
+
+        RegistrationStartResponse response =request.getStartRequest();
+        RegistrationFinishResponse result = this.userService.finishRegistration(request, response.getCredentialCreationOptions());
+        return Response.accepted().entity(result).build();
     }
 
 

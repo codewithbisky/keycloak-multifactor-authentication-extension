@@ -1,27 +1,35 @@
 package org.prg.twofactorauth.webauthn.domain;
 
+import com.yubico.webauthn.FinishRegistrationOptions;
+import com.yubico.webauthn.RegistrationResult;
+import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions;
+import com.yubico.webauthn.exception.RegistrationFailedException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.transaction.Transactional;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.UserModel;
+import org.prg.twofactorauth.dto.RegistrationFinishRequest;
+import org.prg.twofactorauth.dto.RegistrationFinishResponse;
+import org.prg.twofactorauth.util.JsonUtils;
 import org.prg.twofactorauth.webauthn.entity.FidoCredentialEntity;
 import org.prg.twofactorauth.webauthn.entity.RegistrationFlowEntity;
 import org.prg.twofactorauth.webauthn.entity.UserAccountEntity;
 import org.prg.twofactorauth.webauthn.model.FidoCredential;
 import org.prg.twofactorauth.webauthn.model.UserAccount;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.prg.twofactorauth.webauthn.domain.RelyingPartyConfiguration.relyingParty;
 
 public class UserServiceImpl implements UserService {
 
     private final KeycloakSession keycloakSession;
     private final UserModel user;
     private final EntityManager entityManager;
-    public UserServiceImpl(KeycloakSession keycloakSession,UserModel user,EntityManager entityManager) {
+
+    public UserServiceImpl(KeycloakSession keycloakSession, UserModel user, EntityManager entityManager) {
         this.keycloakSession = keycloakSession;
         this.user = user;
         this.entityManager = entityManager;
@@ -74,7 +82,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Optional<UserAccount> findUserById(String userId) {
-        try  {
+        try {
             // Using native query to fetch the user account entity
             Query query = entityManager.createNativeQuery(
                     "SELECT * FROM webauth_user_accounts WHERE id = :id", UserAccountEntity.class);
@@ -94,7 +102,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public Optional<UserAccount> findUserEmail(String email) {
 
-        try  {
+        try {
             // Using native query to fetch the user account entity
             Query query = entityManager.createNativeQuery(
                     "SELECT * FROM webauth_user_accounts WHERE email = :email", UserAccountEntity.class);
@@ -165,22 +173,25 @@ public class UserServiceImpl implements UserService {
         return null;
     }
 
-    private static UserAccount toUserAccount(UserAccountEntity accountEntity) {
+    private  UserAccount toUserAccount(UserAccountEntity accountEntity) {
 
+
+        List<FidoCredentialEntity> credentialsByUserId = findCredentialsByUserId(accountEntity.getId());
+        Set<FidoCredentialEntity> set = new HashSet<>(credentialsByUserId);
         Set<FidoCredential> credentials =
-                accountEntity.getCredentials().stream()
+                set.stream()
                         .map(
                                 c ->
                                         new FidoCredential(
-                                                c.getId(), c.getType(),
-                                                accountEntity.getId(),
+                                                c.getId(),
+                                                c.getType(),
+                                                c.getUserId(),
                                                 c.getPublicKeyCose()))
                         .collect(Collectors.toSet());
 
         return new UserAccount(
                 accountEntity.getId(), accountEntity.getFullName(), accountEntity.getEmail(), credentials);
     }
-
 
 
     public void insertRegistrationFlow(RegistrationFlowEntity registrationFlowEntity) {
@@ -212,4 +223,116 @@ public class UserServiceImpl implements UserService {
 
         }
     }
+
+    @Override
+    public RegistrationFinishResponse finishRegistration(RegistrationFinishRequest finishRequest, PublicKeyCredentialCreationOptions credentialCreationOptions) throws RegistrationFailedException {
+
+
+        FinishRegistrationOptions options =
+                FinishRegistrationOptions.builder()
+                        .request(credentialCreationOptions)
+                        .response(finishRequest.getCredential())
+                        .build();
+        RegistrationResult registrationResult = relyingParty().finishRegistration(options);
+
+        var fidoCredential =
+                new FidoCredential(
+                        registrationResult.getKeyId().getId().getBase64Url(),
+                        registrationResult.getKeyId().getType().name(),
+                        YubicoUtils.toUUID(credentialCreationOptions.getUser().getId()).toString(),
+                        registrationResult.getPublicKeyCose().getBase64Url());
+
+        addCredential(fidoCredential);
+
+        RegistrationFinishResponse registrationFinishResponse = new RegistrationFinishResponse();
+        registrationFinishResponse.setFlowId(finishRequest.getFlowId());
+        registrationFinishResponse.setRegistrationComplete(true);
+        logFinishStep(finishRequest, registrationResult, registrationFinishResponse);
+        return registrationFinishResponse;
+    }
+
+    private void logFinishStep(
+            RegistrationFinishRequest finishRequest,
+            RegistrationResult registrationResult,
+            RegistrationFinishResponse registrationFinishResponse) {
+        RegistrationFlowEntity registrationFlow =
+                findRegistrationFlowById(finishRequest.getFlowId())
+                        .orElseThrow(
+                                () ->
+                                        new RuntimeException(
+                                                "Cloud not find a registration flow with id: "
+                                                        + finishRequest.getFlowId()));
+        registrationFlow.setFinishRequest(JsonUtils.toJson(finishRequest));
+        registrationFlow.setFinishResponse(JsonUtils.toJson(registrationFinishResponse));
+        registrationFlow.setRegistrationResult(JsonUtils.toJson(registrationResult));
+        updateRegistrationFlow(registrationFlow, JsonUtils.toJson(finishRequest), JsonUtils.toJson(registrationFinishResponse), JsonUtils.toJson(registrationResult));
+    }
+
+    public Optional<RegistrationFlowEntity> findRegistrationFlowById(String userId) {
+        try {
+            // Using native query to fetch the user account entity
+            Query query = entityManager.createNativeQuery(
+                    "SELECT * FROM webauthn_registration_flow WHERE id = :id", RegistrationFlowEntity.class);
+            query.setParameter("id", userId);
+            List<RegistrationFlowEntity> results = query.getResultList();
+            if (results.isEmpty()) {
+                return Optional.empty();
+            }
+            return Optional.of(results.get(0));
+        } catch (Exception e) {
+            System.out.println("Error occurred: " + e);
+            return Optional.empty();
+        }
+    }
+
+    public void updateRegistrationFlow(RegistrationFlowEntity registrationFlow, String finishRequest,
+                                       String registrationFinishResponse, String registrationResult) {
+        try {
+            // Update the entity with new JSON string values
+            registrationFlow.setFinishRequest(JsonUtils.toJson(finishRequest));
+            registrationFlow.setFinishResponse(JsonUtils.toJson(registrationFinishResponse));
+            registrationFlow.setRegistrationResult(JsonUtils.toJson(registrationResult));
+
+            // Native update query to update the RegistrationFlowEntity
+            Query query = entityManager.createNativeQuery(
+                    "UPDATE webauthn_registration_flow " +
+                            "SET finish_request = :finishRequest, finish_response = :finishResponse, " +
+                            "yubico_reg_result = :registrationResult " +
+                            "WHERE id = :id");
+
+            // Set parameters for the query
+            query.setParameter("finishRequest", registrationFlow.getFinishRequest());
+            query.setParameter("finishResponse", registrationFlow.getFinishResponse());
+            query.setParameter("registrationResult", registrationFlow.getRegistrationResult());
+            query.setParameter("id", registrationFlow.getId());
+
+            // Execute update
+            query.executeUpdate();
+
+            // Commit transaction
+            entityManager.getTransaction().commit();
+        } catch (Exception e) {
+            System.out.println("(updateRegistrationFlow) Error during native update: " + e.getMessage());
+            e.printStackTrace();
+
+        }
+    }
+
+    public  List<FidoCredentialEntity> findCredentialsByUserId(String userId) {
+        try {
+            // Using native query to fetch the user account entity
+            Query query = entityManager.createNativeQuery(
+                    "SELECT * FROM webauthn_user_credentials WHERE user_id = :userId", FidoCredentialEntity.class);
+            query.setParameter("userId", userId);
+            List<FidoCredentialEntity> results = query.getResultList();
+            if (results.isEmpty()) {
+                return new ArrayList<>();
+            }
+            return results;
+        } catch (Exception e) {
+            System.out.println("(findCredentialsByUserId) Error occurred: " + e);
+            return new ArrayList<>();
+        }
+    }
+
 }

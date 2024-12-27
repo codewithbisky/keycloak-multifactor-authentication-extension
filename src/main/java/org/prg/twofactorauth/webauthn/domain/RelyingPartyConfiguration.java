@@ -19,8 +19,11 @@ public class RelyingPartyConfiguration {
      * @return
      */
 
+    private static RelyingParty relyingParty;
     public static RelyingParty relyingParty() {
 
+
+        if(relyingParty!=null) return relyingParty;
         CredentialRepositoryImpl credentialRepositoryImpl = new CredentialRepositoryImpl();
         RelyingPartyIdentity rpIdentity =
                 RelyingPartyIdentity.builder()
@@ -28,11 +31,12 @@ public class RelyingPartyConfiguration {
                         .name("CodeWithBisky")
                         .build();
 
-        return RelyingParty.builder()
+        relyingParty= RelyingParty.builder()
                 .identity(rpIdentity)
                 .credentialRepository(credentialRepositoryImpl)
                 .allowOriginPort(true)
                 .build();
 
+        return relyingParty;
     }
 }

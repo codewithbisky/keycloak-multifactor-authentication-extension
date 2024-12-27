@@ -2,6 +2,7 @@ package org.prg.twofactorauth.webauthn;
 
 import org.keycloak.connections.jpa.entityprovider.JpaEntityProvider;
 import org.prg.twofactorauth.webauthn.entity.FidoCredentialEntity;
+import org.prg.twofactorauth.webauthn.entity.RegistrationFlowEntity;
 import org.prg.twofactorauth.webauthn.entity.UserAccountEntity;
 
 import java.util.List;
@@ -12,7 +13,7 @@ public class WebauthnRegistrationFlowJpaEntityProvider implements JpaEntityProvi
     @Override
     public List<Class<?>> getEntities() {
         // Return a list of your custom entities.
-        return List.of(UserAccountEntity.class, FidoCredentialEntity.class);
+        return List.of(RegistrationFlowEntity.class);
     }
 
     // This is used to return the location of the Liquibase changelog file.

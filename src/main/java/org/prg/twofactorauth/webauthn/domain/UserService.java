@@ -1,5 +1,9 @@
 package org.prg.twofactorauth.webauthn.domain;
 
+import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions;
+import com.yubico.webauthn.exception.RegistrationFailedException;
+import org.prg.twofactorauth.dto.RegistrationFinishRequest;
+import org.prg.twofactorauth.dto.RegistrationFinishResponse;
 import org.prg.twofactorauth.webauthn.entity.RegistrationFlowEntity;
 import org.prg.twofactorauth.webauthn.model.FidoCredential;
 import org.prg.twofactorauth.webauthn.model.UserAccount;
@@ -35,4 +39,6 @@ public interface UserService {
 
     Optional<FidoCredential> findCredentialById(String credentialId);
     void insertRegistrationFlow(RegistrationFlowEntity registrationFlowEntity);
+
+    RegistrationFinishResponse finishRegistration(RegistrationFinishRequest request, PublicKeyCredentialCreationOptions credentialCreationOptions) throws RegistrationFailedException;
 }
