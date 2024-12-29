@@ -7,19 +7,26 @@ import com.yubico.webauthn.data.ByteArray;
 import com.yubico.webauthn.data.PublicKeyCredentialDescriptor;
 import com.yubico.webauthn.data.PublicKeyCredentialType;
 import com.yubico.webauthn.data.exception.Base64UrlException;
+import org.jboss.logging.Logger;
 import org.prg.twofactorauth.webauthn.model.FidoCredential;
+import org.prg.twofactorauth.webauthn.model.UserAccount;
 
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static org.prg.twofactorauth.util.JsonUtils.toJson;
+
 public class CredentialRepositoryImpl implements CredentialRepository {
+    private static final Logger logger = Logger.getLogger(CredentialRepositoryImpl.class);
 
-    private  UserService userService;
+    private UserService userService;
+    private Optional<UserAccount> userAccount;
 
-    public CredentialRepositoryImpl(UserService userService) {
+    public CredentialRepositoryImpl(UserService userService, Optional<UserAccount> userAccount) {
         this.userService = userService;
+        this.userAccount = userAccount;
     }
 
     @Override
@@ -27,7 +34,18 @@ public class CredentialRepositoryImpl implements CredentialRepository {
 
         // in our implementation the usernames are email addresses
 
+        logger.info("CredentialRepositoryImpl _getCredentialIdsForUsername " + username);
 
+        if (userAccount.isPresent()) {
+
+            return userAccount
+                    .map(
+                            user ->
+                                    user.getCredentials().stream()
+                                            .map(CredentialRepositoryImpl::toPublicKeyCredentialDescriptor)
+                                            .collect(Collectors.toSet()))
+                    .orElse(Set.of());
+        }
         return this.userService
                 .findUserEmail(username)
                 .map(
@@ -41,13 +59,29 @@ public class CredentialRepositoryImpl implements CredentialRepository {
     @Override
     public Optional<ByteArray> getUserHandleForUsername(String username) {
 
-        return this.userService.findUserEmail(username).map(user -> YubicoUtils.toByteArray(UUID.fromString(user.getId())));
+        logger.info("CredentialRepositoryImpl getUserHandleForUsername " + username);
+
+        if (userAccount.isPresent()) {
+            return userAccount.map(user -> YubicoUtils.toByteArray(UUID.fromString(user.getId())));
+        }
+        return this.userService.findUserEmail(username)
+                .map(user -> {
+                    logger.info("CredentialRepositoryImpl getUserHandleForUsername " + toJson(user));
+                    return YubicoUtils.toByteArray(UUID.fromString(user.getId()));
+                });
     }
 
     @Override
     public Optional<String> getUsernameForUserHandle(ByteArray userHandle) {
+
+        logger.info("CredentialRepositoryImpl getUsernameForUserHandle " + userHandle);
         if (userHandle.isEmpty()) {
             return Optional.empty();
+        }
+        if (userAccount.isPresent()) {
+
+            return userAccount
+                    .map(userAccount -> userAccount.getEmail());
         }
         return this.userService
                 .findUserById(YubicoUtils.toUUID(userHandle).toString())
@@ -58,7 +92,24 @@ public class CredentialRepositoryImpl implements CredentialRepository {
     public Optional<RegisteredCredential> lookup(ByteArray credentialId, ByteArray userHandle) {
         // user can have muliple credentials so we are looking first for the user,
         // then for a credential that matches;
+        logger.info("CredentialRepositoryImpl lookup credentialId " + credentialId + " userHandle " + userHandle);
+        if (userAccount.isPresent()) {
 
+            return userAccount
+                    .map(user -> user.getCredentials())
+                    .orElse(Set.of())
+                    .stream()
+                    .filter(
+                            cred -> {
+                                try {
+                                    return credentialId.equals(ByteArray.fromBase64Url(cred.getKeyId()));
+                                } catch (Base64UrlException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            })
+                    .findFirst()
+                    .map(CredentialRepositoryImpl::toRegisteredCredential);
+        }
         return this.userService
                 .findUserById(YubicoUtils.toUUID(userHandle).toString())
                 .map(user -> user.getCredentials())
@@ -79,6 +130,7 @@ public class CredentialRepositoryImpl implements CredentialRepository {
     @Override
     public Set<RegisteredCredential> lookupAll(ByteArray credentialId) {
 
+        logger.info("CredentialRepositoryImpl lookupAll credentialId " + credentialId);
         return Set.of();
     }
 
@@ -95,7 +147,6 @@ public class CredentialRepositoryImpl implements CredentialRepository {
     }
 
     private static PublicKeyCredentialDescriptor toPublicKeyCredentialDescriptor(FidoCredential cred) {
-        PublicKeyCredentialDescriptor descriptor = null;
         try {
             return PublicKeyCredentialDescriptor.builder()
                     .id(ByteArray.fromBase64Url(cred.getKeyId()))

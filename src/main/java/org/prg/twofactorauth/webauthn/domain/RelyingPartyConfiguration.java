@@ -3,6 +3,9 @@ package org.prg.twofactorauth.webauthn.domain;
 
 import com.yubico.webauthn.RelyingParty;
 import com.yubico.webauthn.data.RelyingPartyIdentity;
+import org.prg.twofactorauth.webauthn.model.UserAccount;
+
+import java.util.Optional;
 
 public class RelyingPartyConfiguration {
 
@@ -20,10 +23,11 @@ public class RelyingPartyConfiguration {
      */
 
     private static RelyingParty relyingParty;
-    public static RelyingParty relyingParty(UserService userService) {
+    public static RelyingParty relyingParty(UserService userService, UserAccount userAccount) {
 
         if(relyingParty!=null) return relyingParty;
-        CredentialRepositoryImpl credentialRepositoryImpl = new CredentialRepositoryImpl(userService);
+        CredentialRepositoryImpl credentialRepositoryImpl = new CredentialRepositoryImpl(userService,
+                userAccount== null? Optional.empty():Optional.of(userAccount));
         RelyingPartyIdentity rpIdentity =
                 RelyingPartyIdentity.builder()
                         .id("localhost") // Set this to a parent domain that covers all subdomains// where

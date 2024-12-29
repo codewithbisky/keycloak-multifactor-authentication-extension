@@ -11,6 +11,7 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
+import org.jboss.logging.Logger;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.UserModel;
 import org.keycloak.utils.MediaType;
@@ -30,6 +31,7 @@ import java.util.UUID;
 import static org.prg.twofactorauth.util.JsonUtils.toJson;
 
 public class WebAuthRegistrationResource {
+    private static final Logger logger = Logger.getLogger(WebAuthRegistrationResource.class);
 
     private final KeycloakSession session;
     private final UserModel user;
@@ -40,7 +42,6 @@ public class WebAuthRegistrationResource {
         this.session = session;
         this.user = user;
         userService =new UserServiceImpl(session,user, DbUtil.getEntityManager(session));
-        relyingParty = RelyingPartyConfiguration.relyingParty(userService);
     }
 
     @POST
@@ -100,7 +101,7 @@ public class WebAuthRegistrationResource {
                         .authenticatorSelection(authenticatorSelectionCriteria)
                         .build();
 
-
+        relyingParty = RelyingPartyConfiguration.relyingParty(userService,user);
         return this.relyingParty.startRegistration(startRegistrationOptions);
     }
 

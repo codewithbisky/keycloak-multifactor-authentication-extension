@@ -32,7 +32,7 @@ public class UserServiceImpl implements UserService {
 
     private final KeycloakSession keycloakSession;
     private final UserModel user;
-    private final EntityManager entityManager;
+    private EntityManager entityManager;
 
     public UserServiceImpl(KeycloakSession keycloakSession, UserModel user, EntityManager entityManager) {
         this.keycloakSession = keycloakSession;
@@ -88,6 +88,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public Optional<UserAccount> findUserById(String userId) {
         try {
+            entityManager = DbUtil.getOrReopenEntityManager(keycloakSession,entityManager);
             // Using native query to fetch the user account entity
             Query query = entityManager.createNativeQuery(
                     "SELECT * FROM webauth_user_accounts WHERE id = :id", UserAccountEntity.class);
@@ -108,6 +109,7 @@ public class UserServiceImpl implements UserService {
     public Optional<UserAccount> findUserEmail(String email) {
 
         try {
+            entityManager = DbUtil.getOrReopenEntityManager(keycloakSession,entityManager);
             // Using native query to fetch the user account entity
             Query query = entityManager.createNativeQuery(
                     "SELECT * FROM webauth_user_accounts WHERE email = :email", UserAccountEntity.class);
@@ -118,7 +120,7 @@ public class UserServiceImpl implements UserService {
             }
             return Optional.of(toUserAccount(results.get(0)));
         } catch (Exception e) {
-            System.out.println("Error occurred: " + e);
+            logger.error("(findUserEmail) Error occurred: " + e);
             return Optional.empty();
         }
     }
@@ -153,7 +155,8 @@ public class UserServiceImpl implements UserService {
 
     private UserAccount saveUserAccount(UserAccountEntity result) {
 
-        try (EntityManager entityManager = DbUtil.getEntityManager(keycloakSession)) {
+        try {
+            entityManager = DbUtil.getOrReopenEntityManager(keycloakSession,entityManager);
             entityManager.getTransaction().begin();
 
             // Native insert query
@@ -173,7 +176,7 @@ public class UserServiceImpl implements UserService {
 
             return findUserById(result.getId()).get();
         } catch (Exception e) {
-            System.out.println("(saveUserAccount) Error during native insert: " + e);
+            logger.error("(saveUserAccount) Error during native insert: " + e);
         }
         return null;
     }
@@ -201,6 +204,7 @@ public class UserServiceImpl implements UserService {
 
     public void insertRegistrationFlow(RegistrationFlowEntity registrationFlowEntity) {
         try {
+            entityManager = DbUtil.getOrReopenEntityManager(keycloakSession,entityManager);
             entityManager.getTransaction().begin(); // Start transaction
             // Native insert query
             Query query = entityManager.createNativeQuery(
@@ -223,7 +227,7 @@ public class UserServiceImpl implements UserService {
             // Commit transaction
             entityManager.getTransaction().commit();
         } catch (Exception e) {
-            System.out.println("(insertRegistrationFlow) Error during native insert: " + e.getMessage());
+            logger.error("(insertRegistrationFlow) Error during native insert: " + e.getMessage());
             e.printStackTrace();
 
         }
@@ -254,7 +258,7 @@ public class UserServiceImpl implements UserService {
                         .response(pkc)
                         .build();
 
-        RegistrationResult registrationResult = relyingParty(this).finishRegistration(options);
+        RegistrationResult registrationResult = relyingParty(this,null).finishRegistration(options);
 
         var fidoCredential =
                 new FidoCredential(
@@ -291,6 +295,7 @@ public class UserServiceImpl implements UserService {
 
     public Optional<RegistrationFlowEntity> findRegistrationFlowById(String userId) {
         try {
+            entityManager = DbUtil.getOrReopenEntityManager(keycloakSession,entityManager);
             // Using native query to fetch the user account entity
             Query query = entityManager.createNativeQuery(
                     "SELECT * FROM webauthn_registration_flow WHERE id = :id", RegistrationFlowEntity.class);
@@ -301,7 +306,7 @@ public class UserServiceImpl implements UserService {
             }
             return Optional.of(results.get(0));
         } catch (Exception e) {
-            System.out.println("Error occurred: " + e);
+            logger.error("Error occurred: " + e);
             return Optional.empty();
         }
     }
@@ -309,6 +314,7 @@ public class UserServiceImpl implements UserService {
     public void updateRegistrationFlow(RegistrationFlowEntity registrationFlow, String finishRequest,
                                        String registrationFinishResponse, String registrationResult) {
         try {
+            entityManager = DbUtil.getOrReopenEntityManager(keycloakSession,entityManager);
             // Update the entity with new JSON string values
             registrationFlow.setFinishRequest(toJson(finishRequest));
             registrationFlow.setFinishResponse(toJson(registrationFinishResponse));
@@ -333,7 +339,7 @@ public class UserServiceImpl implements UserService {
             // Commit transaction
             entityManager.getTransaction().commit();
         } catch (Exception e) {
-            System.out.println("(updateRegistrationFlow) Error during native update: " + e.getMessage());
+            logger.error("(updateRegistrationFlow) Error during native update: " + e.getMessage());
             e.printStackTrace();
 
         }
@@ -341,6 +347,7 @@ public class UserServiceImpl implements UserService {
 
     public List<FidoCredentialEntity> findCredentialsByUserId(String userId) {
         try {
+            entityManager = DbUtil.getOrReopenEntityManager(keycloakSession,entityManager);
             // Using native query to fetch the user account entity
             Query query = entityManager.createNativeQuery(
                     "SELECT * FROM webauthn_user_credentials WHERE user_id = :userId", FidoCredentialEntity.class);
@@ -351,7 +358,7 @@ public class UserServiceImpl implements UserService {
             }
             return results;
         } catch (Exception e) {
-            System.out.println("(findCredentialsByUserId) Error occurred: " + e);
+            logger.error("(findCredentialsByUserId) Error occurred: " + e);
             return new ArrayList<>();
         }
     }
@@ -372,7 +379,7 @@ public class UserServiceImpl implements UserService {
                         .username(loginStartRequest.getEmail())
 //                             .userHandle(YubicoUtils.toByteArray(UUID.fromString(user.getId())))
                         .build();
-        AssertionRequest assertionRequest = relyingParty(this).startAssertion(options);
+        AssertionRequest assertionRequest = relyingParty(this,user).startAssertion(options);
 
         LoginStartResponse loginStartResponse = new LoginStartResponse();
         loginStartResponse.setFlowId(UUID.randomUUID().toString());
@@ -390,6 +397,7 @@ public class UserServiceImpl implements UserService {
 
     public void saveLoginFlowEntityNative(LoginFlowEntity loginFlowEntity) {
         try {
+            entityManager = DbUtil.getOrReopenEntityManager(keycloakSession,entityManager);
             // Begin transaction
             entityManager.getTransaction().begin();
 
@@ -418,6 +426,7 @@ public class UserServiceImpl implements UserService {
 
     public Optional<LoginFlowEntity> findLoginFlowById(String userId) {
         try {
+            entityManager = DbUtil.getOrReopenEntityManager(keycloakSession,entityManager);
             // Using native query to fetch the user account entity
             Query query = entityManager.createNativeQuery(
                     "SELECT * FROM webauthn_login_flow WHERE id = :id", LoginFlowEntity.class);
@@ -451,7 +460,7 @@ public class UserServiceImpl implements UserService {
         Object parsed = JsonUtils.mapper.readValue(string, Object.class);
 
         String string1 = JsonUtils.mapper.writerWithDefaultPrettyPrinter().writeValueAsString(parsed);
-        PublicKeyCredential<AuthenticatorAssertionResponse, ClientAssertionExtensionOutputs> pkc = null;
+        PublicKeyCredential<AuthenticatorAssertionResponse, ClientAssertionExtensionOutputs>
         pkc = PublicKeyCredential.parseAssertionResponseJson(string1);
         FinishAssertionOptions options =
                 FinishAssertionOptions.builder()
@@ -459,7 +468,10 @@ public class UserServiceImpl implements UserService {
                         .response(pkc)
                         .build();
 
-        AssertionResult assertionResult = relyingParty(this).finishAssertion(options);
+        String userName = loginFlowEntity.getUsername();
+        logger.info("Username "+userName);
+        UserAccount userAccount = findUserEmail(userName).orElseThrow();
+        AssertionResult assertionResult = relyingParty(this,userAccount).finishAssertion(options);
         loginFlowEntity.setAssertionResult(toJson(assertionResult));
         loginFlowEntity.setSuccessfulLogin(assertionResult.isSuccess());
         updateLoginFlowEntityNative(loginFlowEntity.getId(), loginFlowEntity.getAssertionResult(), loginFlowEntity.getSuccessfulLogin());
@@ -471,6 +483,7 @@ public class UserServiceImpl implements UserService {
 
     public void updateLoginFlowEntityNative(String id, String assertionResult, boolean successfulLogin) {
         try {
+            entityManager = DbUtil.getOrReopenEntityManager(keycloakSession,entityManager);
             // Begin transaction
             entityManager.getTransaction().begin();
 
