@@ -8,6 +8,7 @@ import com.yubico.webauthn.exception.RegistrationFailedException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.transaction.Transactional;
+import org.apache.commons.collections4.map.MultiValueMap;
 import org.jboss.logging.Logger;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.UserModel;
@@ -469,15 +470,18 @@ public class UserServiceImpl implements UserService {
                         .build();
 
         String userName = loginFlowEntity.getUsername();
-        logger.info("Username "+userName);
         UserAccount userAccount = findUserEmail(userName).orElseThrow();
         AssertionResult assertionResult = relyingParty(this,userAccount).finishAssertion(options);
         loginFlowEntity.setAssertionResult(toJson(assertionResult));
         loginFlowEntity.setSuccessfulLogin(assertionResult.isSuccess());
         updateLoginFlowEntityNative(loginFlowEntity.getId(), loginFlowEntity.getAssertionResult(), loginFlowEntity.getSuccessfulLogin());
         Map<String, Object> results = new HashMap<>();
-        results.put("success", true);
         //todo bearer token
+        if (assertionResult.isSuccess()) {
+            results.put("success", true);
+            String token = requestAccessToken(userName);
+            results.put("access_token", token);
+        }
         return results;
     }
 
@@ -507,5 +511,8 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    private String requestAccessToken(String username) {
 
+        return  null;
+    }
 }

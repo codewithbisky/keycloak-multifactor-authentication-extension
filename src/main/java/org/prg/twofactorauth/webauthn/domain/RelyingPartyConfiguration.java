@@ -22,10 +22,9 @@ public class RelyingPartyConfiguration {
      * @return
      */
 
-    private static RelyingParty relyingParty;
     public static RelyingParty relyingParty(UserService userService, UserAccount userAccount) {
 
-        if(relyingParty!=null) return relyingParty;
+
         CredentialRepositoryImpl credentialRepositoryImpl = new CredentialRepositoryImpl(userService,
                 userAccount== null? Optional.empty():Optional.of(userAccount));
         RelyingPartyIdentity rpIdentity =
@@ -34,12 +33,10 @@ public class RelyingPartyConfiguration {
                         .name("CodeWithBisky")
                         .build();
 
-        relyingParty= RelyingParty.builder()
+        return RelyingParty.builder()
                 .identity(rpIdentity)
                 .credentialRepository(credentialRepositoryImpl)
                 .allowOriginPort(true)
                 .build();
-
-        return relyingParty;
     }
 }
