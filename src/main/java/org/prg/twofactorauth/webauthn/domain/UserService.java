@@ -5,11 +5,13 @@ import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions;
 import com.yubico.webauthn.exception.AssertionFailedException;
 import com.yubico.webauthn.exception.RegistrationFailedException;
 import org.prg.twofactorauth.dto.*;
+import org.prg.twofactorauth.webauthn.entity.FidoCredentialEntity;
 import org.prg.twofactorauth.webauthn.entity.RegistrationFlowEntity;
 import org.prg.twofactorauth.webauthn.model.FidoCredential;
 import org.prg.twofactorauth.webauthn.model.UserAccount;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -46,4 +48,5 @@ public interface UserService {
     RegistrationFinishResponse finishRegistration(RegistrationFinishRequest request) throws RegistrationFailedException, IOException;
     LoginStartResponse startLogin(LoginStartRequest loginStartRequest) throws JsonProcessingException;
     Map<String,Object> finishLogin(LoginFinishRequest loginFinishRequest) throws IOException, AssertionFailedException;
+    List<FidoCredentialEntity> findCredentialsByUserId(String userId);
 }

@@ -8,7 +8,6 @@ import com.yubico.webauthn.exception.RegistrationFailedException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.transaction.Transactional;
-import org.apache.commons.collections4.map.MultiValueMap;
 import org.jboss.logging.Logger;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.UserModel;
