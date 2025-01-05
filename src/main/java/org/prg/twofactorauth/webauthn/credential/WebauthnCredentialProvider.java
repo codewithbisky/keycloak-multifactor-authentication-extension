@@ -17,10 +17,6 @@ public class WebauthnCredentialProvider implements CredentialProvider<WebAuthnCr
         this.session = session;
     }
 
-//    private PhoneVerificationCodeProvider getTokenCodeService() {
-//        return session.getProvider(PhoneVerificationCodeProvider.class);
-//    }
-
     @Override
     public boolean supportsCredentialType(String credentialType) {
         return getType().equals(credentialType);
