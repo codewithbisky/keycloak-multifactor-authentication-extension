@@ -3,6 +3,7 @@ package org.prg.twofactorauth.webauthn;
 import org.keycloak.Config;
 import org.keycloak.authentication.Authenticator;
 import org.keycloak.authentication.AuthenticatorFactory;
+import org.keycloak.authentication.ConfigurableAuthenticatorFactory;
 import org.keycloak.models.AuthenticationExecutionModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.credential.OTPCredentialModel;
@@ -11,7 +12,7 @@ import org.keycloak.provider.ProviderConfigProperty;
 import java.util.Collections;
 import java.util.List;
 
-public class WebAuthn2MFAAuthenticatorFactory implements AuthenticatorFactory {
+public class WebAuthn2MFAAuthenticatorFactory implements AuthenticatorFactory, ConfigurableAuthenticatorFactory {
 
     private static final String PROVIDER_ID = "webauthn-2fa-authenticator";
 
@@ -62,7 +63,7 @@ public class WebAuthn2MFAAuthenticatorFactory implements AuthenticatorFactory {
 
     @Override
     public boolean isUserSetupAllowed() {
-        return false;
+        return true;
     }
 
     @Override

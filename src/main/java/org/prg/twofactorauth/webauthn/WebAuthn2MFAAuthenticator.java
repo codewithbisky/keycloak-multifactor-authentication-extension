@@ -5,13 +5,16 @@ import org.jboss.logging.Logger;
 import org.keycloak.authentication.AuthenticationFlowContext;
 import org.keycloak.authentication.AuthenticationFlowError;
 import org.keycloak.authentication.Authenticator;
-import org.keycloak.authentication.authenticators.browser.AbstractUsernameFormAuthenticator;
+import org.keycloak.authentication.CredentialValidator;
+import org.keycloak.credential.CredentialProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.sessions.AuthenticationSessionModel;
 import org.prg.twofactorauth.dto.LoginFinishRequest;
+import org.prg.twofactorauth.webauthn.credential.WebauthnCredentialProvider;
+import org.prg.twofactorauth.webauthn.credential.WebauthnCredentialProviderFactory;
 import org.prg.twofactorauth.webauthn.domain.DbUtil;
 import org.prg.twofactorauth.webauthn.domain.UserService;
 import org.prg.twofactorauth.webauthn.domain.UserServiceImpl;
@@ -21,19 +24,17 @@ import java.util.List;
 import java.util.Map;
 
 
-public class WebAuthn2MFAAuthenticator extends AbstractUsernameFormAuthenticator {
+public class WebAuthn2MFAAuthenticator implements Authenticator, CredentialValidator<WebauthnCredentialProvider> {
 
     private static final Logger logger = Logger.getLogger(WebAuthn2MFAAuthenticator.class);
 
     @Override
     public void authenticate(AuthenticationFlowContext context) {
-        // No-op for the initial step; handled by REST endpoint
-        challenge(context, null);
+        action(context);
     }
 
     @Override
     public void action(AuthenticationFlowContext context) {
-        logger.info("WebAuthn2MFAAuthenticator Action started");
         AuthenticationSessionModel session = context.getAuthenticationSession();
         String username = session.getAuthenticatedUser().getUsername();
         String credential = context.getHttpRequest()
@@ -94,10 +95,7 @@ public class WebAuthn2MFAAuthenticator extends AbstractUsernameFormAuthenticator
     public boolean configuredFor(KeycloakSession keycloakSession,
                                  RealmModel realmModel, UserModel userModel) {
 
-        UserService userService = new UserServiceImpl(keycloakSession, userModel, DbUtil.getEntityManager(keycloakSession));
-        List<FidoCredentialEntity> credentialEntities = userService.findCredentialsByUserId(userModel.getId());
-        logger.info("WebAuthn2MFAAuthenticator credentialEntities " + credentialEntities);
-        return credentialEntities.isEmpty();
+        return getCredentialProvider(keycloakSession).isConfiguredFor(realmModel, userModel, getType(keycloakSession));
     }
 
     @Override
@@ -109,5 +107,11 @@ public class WebAuthn2MFAAuthenticator extends AbstractUsernameFormAuthenticator
 
     @Override
     public void close() {
+    }
+
+    @Override
+    public WebauthnCredentialProvider getCredentialProvider(KeycloakSession keycloakSession) {
+        return (WebauthnCredentialProvider) keycloakSession.getProvider(CredentialProvider.class, WebauthnCredentialProviderFactory.PROVIDER_ID);
+
     }
 }

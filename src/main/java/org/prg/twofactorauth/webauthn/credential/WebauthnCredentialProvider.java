@@ -28,17 +28,16 @@ public class WebauthnCredentialProvider implements CredentialProvider<WebAuthnCr
 
     @Override
     public boolean isConfiguredFor(RealmModel realm, UserModel user, String credentialType) {
+
         if (!supportsCredentialType(credentialType)) return false;
+
         return user.credentialManager().getStoredCredentialsByTypeStream(credentialType).findAny().isPresent();
     }
 
     @Override
     public boolean isValid(RealmModel realm, UserModel user, CredentialInput input) {
         logger.info("---------------begin valid webauthn");
-
-
-
-        return false;
+        return true;
     }
 
     @Override
