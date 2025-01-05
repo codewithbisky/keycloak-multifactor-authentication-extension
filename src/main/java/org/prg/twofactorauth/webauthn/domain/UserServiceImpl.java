@@ -9,10 +9,14 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
+import org.keycloak.credential.CredentialProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.UserModel;
 import org.prg.twofactorauth.dto.*;
 import org.prg.twofactorauth.util.JsonUtils;
+import org.prg.twofactorauth.webauthn.credential.WebAuthnCredentialModel;
+import org.prg.twofactorauth.webauthn.credential.WebauthnCredentialProvider;
+import org.prg.twofactorauth.webauthn.credential.WebauthnCredentialProviderFactory;
 import org.prg.twofactorauth.webauthn.entity.FidoCredentialEntity;
 import org.prg.twofactorauth.webauthn.entity.LoginFlowEntity;
 import org.prg.twofactorauth.webauthn.entity.RegistrationFlowEntity;
@@ -53,6 +57,9 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("can't add a credential to a user that does not exist");
         }
         insertFidoCredential(fidoCredentialEntity);
+        WebauthnCredentialProvider ocp = (WebauthnCredentialProvider) keycloakSession
+                .getProvider(CredentialProvider.class, WebauthnCredentialProviderFactory.PROVIDER_ID);
+        ocp.createCredential(keycloakSession.getContext().getRealm(), user, WebAuthnCredentialModel.create(fidoCredential.getKeyId(),fidoCredentialEntity));
     }
 
     public void insertFidoCredential(FidoCredentialEntity fidoCredentialEntity) {
@@ -249,7 +256,7 @@ public class UserServiceImpl implements UserService {
             pkc = PublicKeyCredential.parseRegistrationResponseJson(string1);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("parseRegistrationResponseJson ",e);
             throw e;
         }
         FinishRegistrationOptions options =
