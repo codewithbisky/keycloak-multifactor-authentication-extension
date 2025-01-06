@@ -23,6 +23,8 @@ import org.prg.twofactorauth.webauthn.entity.FidoCredentialEntity;
 import java.util.List;
 import java.util.Map;
 
+import static org.prg.twofactorauth.util.JsonUtils.sanitizedJson;
+
 
 public class WebAuthn2MFAAuthenticator implements Authenticator, CredentialValidator<WebauthnCredentialProvider> {
 
@@ -43,7 +45,7 @@ public class WebAuthn2MFAAuthenticator implements Authenticator, CredentialValid
         String flowId = context.getHttpRequest()
                 .getDecodedFormParameters()
                 .getFirst("flowId");
-
+        credential = sanitizedJson(credential);
         if (completeAuthentication(username, credential, flowId, context)) {
             context.success();
         } else {

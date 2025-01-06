@@ -1,6 +1,5 @@
 package org.prg.twofactorauth.util;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -80,6 +79,16 @@ public class JsonUtils {
                             "Unable to convert Java object of type '%s' to json using jackson ObjectMapper",
                             object.getClass().getName()),
                     e);
+        }
+    }
+    public static String sanitizedJson(String invalidJson) {
+
+        try {
+            String sanitizedJson = invalidJson.replace("\\\"", "\""); // Remove extra escapes
+            sanitizedJson = sanitizedJson.replaceAll(",(?=\\s*[}\\]])", ""); // Remove trailing commas
+            return sanitizedJson;
+        } catch (Exception e) {
+            throw new JsonUtilsException("Failed to parse JSON: " + e.getMessage(), e);
         }
     }
 }
