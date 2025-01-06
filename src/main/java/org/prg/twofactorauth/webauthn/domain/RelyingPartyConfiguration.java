@@ -3,6 +3,8 @@ package org.prg.twofactorauth.webauthn.domain;
 
 import com.yubico.webauthn.RelyingParty;
 import com.yubico.webauthn.data.RelyingPartyIdentity;
+import org.jboss.logging.Logger;
+import org.prg.twofactorauth.exception.MissingConfigException;
 import org.prg.twofactorauth.webauthn.model.UserAccount;
 
 import java.util.Optional;
@@ -21,16 +23,22 @@ public class RelyingPartyConfiguration {
      * @param credentialRepository an implementation to save webauthn details to from the databsae
      * @return
      */
+    private static final Logger logger = Logger.getLogger(RelyingPartyConfiguration.class);
 
     public static RelyingParty relyingParty(UserService userService, UserAccount userAccount) {
 
 
+        String domain = System.getenv("KC_WEBAUTHN_DOMAIN");
+        String webauthnName = System.getenv("KC_WEBAUTHN_NAME");
+        if (domain == null) {
+            throw new MissingConfigException("KC_WEBAUTHN_DOMAIN environment variable not set");
+        }
         CredentialRepositoryImpl credentialRepositoryImpl = new CredentialRepositoryImpl(userService,
-                userAccount== null? Optional.empty():Optional.of(userAccount));
+                userAccount == null ? Optional.empty() : Optional.of(userAccount));
         RelyingPartyIdentity rpIdentity =
                 RelyingPartyIdentity.builder()
-                        .id("localhost") // Set this to a parent domain that covers all subdomains// where
-                        .name("CodeWithBisky")
+                        .id(domain) // Set this to a parent domain that covers all subdomains// where
+                        .name(webauthnName == null ? "CodeWithBisky" : webauthnName)
                         .build();
 
         return RelyingParty.builder()
