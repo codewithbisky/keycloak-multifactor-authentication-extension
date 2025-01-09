@@ -1,6 +1,7 @@
 package org.prg.twofactorauth.webauthn;
 
 import jakarta.ws.rs.core.Response;
+import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
 import org.keycloak.authentication.AuthenticationFlowContext;
 import org.keycloak.authentication.AuthenticationFlowError;
@@ -12,6 +13,7 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.sessions.AuthenticationSessionModel;
+import org.prg.twofactorauth.dto.ErrorDto;
 import org.prg.twofactorauth.dto.LoginFinishRequest;
 import org.prg.twofactorauth.webauthn.credential.WebauthnCredentialProvider;
 import org.prg.twofactorauth.webauthn.credential.WebauthnCredentialProviderFactory;
@@ -37,6 +39,18 @@ public class WebAuthn2MFAAuthenticator implements Authenticator, CredentialValid
 
     @Override
     public void action(AuthenticationFlowContext context) {
+
+        if (!this.configuredFor(context.getSession(), context.getRealm(), context.getUser())) {
+            if (context.getExecution().isConditional()) {
+                context.attempted();
+            } else if (context.getExecution().isRequired()) {
+                context.getEvent().error("webauth_authentication_required");
+                Response challengeResponse = this.errorResponse(Response.Status.UNAUTHORIZED.getStatusCode(),
+                        "webauthn authentication required");
+                context.failure(AuthenticationFlowError.INVALID_USER, challengeResponse);
+            }
+            return;
+        }
         AuthenticationSessionModel session = context.getAuthenticationSession();
         String username = session.getAuthenticatedUser().getUsername();
         String credential = context.getHttpRequest()
@@ -45,15 +59,32 @@ public class WebAuthn2MFAAuthenticator implements Authenticator, CredentialValid
         String flowId = context.getHttpRequest()
                 .getDecodedFormParameters()
                 .getFirst("flowId");
+
+        if(StringUtils.isBlank(credential)){
+
+            if (context.getUser() != null) {
+                context.getEvent().user(context.getUser());
+            }
+            context.getEvent().error("webauth_authentication_required");
+            Response challengeResponse = this.errorResponse(Response.Status.UNAUTHORIZED.getStatusCode(),"Webauthn Credential missing");
+            context.failure(AuthenticationFlowError.INVALID_USER, challengeResponse);
+            return;
+        }
         credential = sanitizedJson(credential);
         if (completeAuthentication(username, credential, flowId, context)) {
             context.success();
         } else {
             Response errorResponse = Response.status(Response.Status.UNAUTHORIZED)
-                    .entity("WebAuthn authentication failed")
+                    .entity(new ErrorDto("WebAuthn authentication failed"))
                     .build();
             context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, errorResponse);
         }
+    }
+
+    private Response errorResponse(int statusCode, String invalidUserCredentials) {
+  return Response.status(statusCode)
+                .entity(new ErrorDto(invalidUserCredentials))
+                .build();
     }
 
     private boolean completeAuthentication(String username,
