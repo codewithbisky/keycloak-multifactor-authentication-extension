@@ -49,4 +49,5 @@ public interface UserService {
     LoginStartResponse startLogin(LoginStartRequest loginStartRequest) throws JsonProcessingException;
     Map<String,Object> finishLogin(LoginFinishRequest loginFinishRequest) throws IOException, AssertionFailedException;
     List<FidoCredentialEntity> findCredentialsByUserId(String userId);
+    boolean webAuthnConfigured();
 }

@@ -482,11 +482,8 @@ public class UserServiceImpl implements UserService {
         loginFlowEntity.setSuccessfulLogin(assertionResult.isSuccess());
         updateLoginFlowEntityNative(loginFlowEntity.getId(), loginFlowEntity.getAssertionResult(), loginFlowEntity.getSuccessfulLogin());
         Map<String, Object> results = new HashMap<>();
-        //todo bearer token
         if (assertionResult.isSuccess()) {
             results.put("success", true);
-            String token = requestAccessToken(userName);
-            results.put("access_token", token);
         }
         return results;
     }
@@ -517,8 +514,13 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    private String requestAccessToken(String username) {
+    public boolean webAuthnConfigured() {
 
-        return  null;
+        return  getCredentialProvider(keycloakSession).isConfiguredFor(keycloakSession.getContext().getRealm(), user, WebAuthnCredentialModel.TYPE);
+    }
+
+    public WebauthnCredentialProvider getCredentialProvider(KeycloakSession keycloakSession) {
+        return (WebauthnCredentialProvider) keycloakSession.getProvider(CredentialProvider.class, WebauthnCredentialProviderFactory.PROVIDER_ID);
+
     }
 }

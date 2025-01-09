@@ -54,5 +54,20 @@ public class TwoFactorAuthRestResource {
         return new WebAuthLoginResource(session);
     }
 
+    @Path("webauth/{username}")
+    public WebAuthRegistrationResource registered(@PathParam("username") final String username) throws SQLException {
+        final UserModel user = getUserByUsername(username);
+        return new WebAuthRegistrationResource(session, user);
+    }
+
+
+    private UserModel getUserByUsername(final String username) {
+
+        final UserModel user = this.session.users().getUserByUsername(this.session.getContext().getRealm(), username);
+        if (user == null) {
+            throw new BadRequestException("user does not exist for username: " + username);
+        }
+        return user;
+    }
 
 }
