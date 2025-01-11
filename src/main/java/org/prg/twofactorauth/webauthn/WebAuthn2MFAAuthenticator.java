@@ -77,7 +77,7 @@ public class WebAuthn2MFAAuthenticator implements Authenticator, CredentialValid
             Response errorResponse = Response.status(Response.Status.UNAUTHORIZED)
                     .entity(new ErrorDto("WebAuthn authentication failed"))
                     .build();
-            context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, errorResponse);
+            context.failure(AuthenticationFlowError.INVALID_CREDENTIALS, errorResponse);
         }
     }
 

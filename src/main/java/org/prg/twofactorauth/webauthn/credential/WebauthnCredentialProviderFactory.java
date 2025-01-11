@@ -6,7 +6,7 @@ import org.keycloak.models.KeycloakSession;
 
 public class WebauthnCredentialProviderFactory implements CredentialProviderFactory<WebauthnCredentialProvider> {
 
-    public final static String PROVIDER_ID = "webauth-custom";
+    public static final String PROVIDER_ID = "webauth-custom";
 
     @Override
     public CredentialProvider create(KeycloakSession session) {

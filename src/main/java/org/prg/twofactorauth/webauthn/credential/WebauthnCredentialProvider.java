@@ -10,7 +10,7 @@ import org.keycloak.models.UserModel;
 
 public class WebauthnCredentialProvider implements CredentialProvider<WebAuthnCredentialModel>, CredentialInputValidator {
 
-    private final static Logger logger = Logger.getLogger(WebauthnCredentialProvider.class);
+    private static final Logger logger = Logger.getLogger(WebauthnCredentialProvider.class);
     private final KeycloakSession session;
 
     public WebauthnCredentialProvider(KeycloakSession session) {

@@ -1,1 +1,2 @@
 org.prg.twofactorauth.webauthn.WebAuthn2MFAAuthenticatorFactory
+org.prg.twofactorauth.MultiFactorAuthenticatorFactory
