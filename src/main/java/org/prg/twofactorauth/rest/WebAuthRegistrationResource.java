@@ -27,9 +27,7 @@ import org.prg.twofactorauth.webauthn.model.UserAccount;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static org.prg.twofactorauth.util.JsonUtils.toJson;
 
@@ -125,10 +123,16 @@ public class WebAuthRegistrationResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response registered() {
 
-        Map<String, Object> result = new HashMap<>();
-        result.put("custom_webauthn", this.userService.webAuthnConfigured());
-        result.put("otp", user.credentialManager().getStoredCredentialsByTypeStream("otp").findAny().isPresent());
-        return Response.accepted().entity(result).build();
+        List<String> credentials = new ArrayList<>();
+        boolean webAuthnConfigured = this.userService.webAuthnConfigured();
+        if (webAuthnConfigured) {
+            credentials.add("webauthn");
+        }
+        boolean otp = user.credentialManager().getStoredCredentialsByTypeStream("otp").findAny().isPresent();
+        if (otp) {
+            credentials.add("otp");
+        }
+        return Response.accepted().entity(credentials).build();
     }
 
 }
