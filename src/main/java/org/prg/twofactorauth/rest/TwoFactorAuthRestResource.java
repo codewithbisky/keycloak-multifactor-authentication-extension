@@ -62,17 +62,12 @@ public class TwoFactorAuthRestResource {
         return new WebAuthLoginResource(session);
     }
 
-    @Path("webauth/{username}")
-    public WebAuthRegistrationResource registered(@PathParam("username") final String username) throws SQLException {
-        final UserModel user = getUserByUsername(username);
-        return new WebAuthRegistrationResource(session, user);
-    }
 
-    @Path("methods/{username}")
+    @Path("methods")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response methods(@PathParam("username") final String username) {
+    public Response methods(@QueryParam("username") final String username) {
         final UserModel user = getUserByUsername(username);
         List<String> credentials = new ArrayList<>();
         boolean webAuthnConfigured = webAuthnConfigured(user);
