@@ -1,12 +1,20 @@
 package org.prg.twofactorauth.rest;
 
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Response;
+import org.keycloak.credential.CredentialProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.UserModel;
 import org.keycloak.services.managers.AppAuthManager;
 import org.keycloak.services.managers.AuthenticationManager;
+import org.keycloak.utils.MediaType;
+import org.prg.twofactorauth.webauthn.credential.WebAuthnCredentialModel;
+import org.prg.twofactorauth.webauthn.credential.WebauthnCredentialProvider;
+import org.prg.twofactorauth.webauthn.credential.WebauthnCredentialProviderFactory;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TwoFactorAuthRestResource {
 
@@ -58,6 +66,33 @@ public class TwoFactorAuthRestResource {
     public WebAuthRegistrationResource registered(@PathParam("username") final String username) throws SQLException {
         final UserModel user = getUserByUsername(username);
         return new WebAuthRegistrationResource(session, user);
+    }
+
+    @Path("methods/{username}")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response methods(@PathParam("username") final String username) {
+        final UserModel user = getUserByUsername(username);
+        List<String> credentials = new ArrayList<>();
+        boolean webAuthnConfigured = webAuthnConfigured(user);
+        if (webAuthnConfigured) {
+            credentials.add("webauthn");
+        }
+        boolean otp = user.credentialManager().getStoredCredentialsByTypeStream("otp").findAny().isPresent();
+        if (otp) {
+            credentials.add("otp");
+        }
+        return Response.ok().entity(credentials).build();
+    }
+
+    public boolean webAuthnConfigured(UserModel user) {
+        return getCredentialProvider(session).isConfiguredFor(session.getContext().getRealm(), user, WebAuthnCredentialModel.TYPE);
+    }
+
+    public WebauthnCredentialProvider getCredentialProvider(KeycloakSession keycloakSession) {
+        return (WebauthnCredentialProvider) keycloakSession.getProvider(CredentialProvider.class, WebauthnCredentialProviderFactory.PROVIDER_ID);
+
     }
 
 

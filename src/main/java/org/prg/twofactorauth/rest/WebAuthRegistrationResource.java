@@ -117,22 +117,6 @@ public class WebAuthRegistrationResource {
         userService.insertRegistrationFlow(registrationEntity);
     }
 
-    @POST
-    @Path("validation")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response registered() {
 
-        List<String> credentials = new ArrayList<>();
-        boolean webAuthnConfigured = this.userService.webAuthnConfigured();
-        if (webAuthnConfigured) {
-            credentials.add("webauthn");
-        }
-        boolean otp = user.credentialManager().getStoredCredentialsByTypeStream("otp").findAny().isPresent();
-        if (otp) {
-            credentials.add("otp");
-        }
-        return Response.accepted().entity(credentials).build();
-    }
 
 }
