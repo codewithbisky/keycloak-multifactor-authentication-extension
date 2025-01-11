@@ -64,7 +64,7 @@ public class TwoFactorAuthRestResource {
 
 
     @Path("methods")
-    @POST
+    @GET
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response methods(@QueryParam("username") final String username) {
