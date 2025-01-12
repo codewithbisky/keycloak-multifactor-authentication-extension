@@ -244,7 +244,7 @@ public class UserServiceImpl implements UserService {
     public RegistrationFinishResponse finishRegistration(RegistrationFinishRequest finishRequest) throws RegistrationFailedException, IOException {
 
 
-        RegistrationFlowEntity invalidFlow = findRegistrationFlowById(finishRequest.getFlowId()).orElseThrow(() -> new RuntimeException("Invalid flow"));
+        RegistrationFlowEntity invalidFlow = findRegistrationFlowById(finishRequest.getReference()).orElseThrow(() -> new RuntimeException("Invalid flow"));
         PublicKeyCredentialCreationOptions credentialCreationOptions = PublicKeyCredentialCreationOptions.fromJson(invalidFlow.getRegistrationResult());
         String string = finishRequest.getCredential();
         Object parsed = JsonUtils.mapper.readValue(string, Object.class);
@@ -277,7 +277,7 @@ public class UserServiceImpl implements UserService {
         addCredential(fidoCredential);
 
         RegistrationFinishResponse registrationFinishResponse = new RegistrationFinishResponse();
-        registrationFinishResponse.setFlowId(finishRequest.getFlowId());
+        registrationFinishResponse.setFlowId(finishRequest.getReference());
         registrationFinishResponse.setRegistrationComplete(true);
         logFinishStep(finishRequest, registrationResult, registrationFinishResponse);
         return registrationFinishResponse;
@@ -288,12 +288,12 @@ public class UserServiceImpl implements UserService {
             RegistrationResult registrationResult,
             RegistrationFinishResponse registrationFinishResponse) {
         RegistrationFlowEntity registrationFlow =
-                findRegistrationFlowById(finishRequest.getFlowId())
+                findRegistrationFlowById(finishRequest.getReference())
                         .orElseThrow(
                                 () ->
                                         new RuntimeException(
                                                 "Cloud not find a registration flow with id: "
-                                                        + finishRequest.getFlowId()));
+                                                        + finishRequest.getReference()));
         registrationFlow.setFinishRequest(toJson(finishRequest));
         registrationFlow.setFinishResponse(toJson(registrationFinishResponse));
         registrationFlow.setRegistrationResult(toJson(registrationResult));
@@ -389,11 +389,11 @@ public class UserServiceImpl implements UserService {
         AssertionRequest assertionRequest = relyingParty(this,user).startAssertion(options);
 
         LoginStartResponse loginStartResponse = new LoginStartResponse();
-        loginStartResponse.setFlowId(UUID.randomUUID().toString());
+        loginStartResponse.setReference(UUID.randomUUID().toString());
         loginStartResponse.setAssertionRequest(assertionRequest);
 
         LoginFlowEntity loginFlowEntity = new LoginFlowEntity();
-        loginFlowEntity.setId(loginStartResponse.getFlowId());
+        loginFlowEntity.setId(loginStartResponse.getReference());
         loginFlowEntity.setStartRequest(toJson(loginStartRequest));
         loginFlowEntity.setStartResponse(toJson(loginStartResponse));
         loginFlowEntity.setUsername(loginStartRequest.getEmail());

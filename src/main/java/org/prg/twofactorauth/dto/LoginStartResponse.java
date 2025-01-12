@@ -2,18 +2,16 @@ package org.prg.twofactorauth.dto;
 
 import com.yubico.webauthn.AssertionRequest;
 
-import java.util.UUID;
-
 public class LoginStartResponse {
-  private String flowId;
+  private String reference;
   private AssertionRequest assertionRequest;
 
-  public String getFlowId() {
-    return flowId;
+  public String getReference() {
+    return reference;
   }
 
-  public void setFlowId(String flowId) {
-    this.flowId = flowId;
+  public void setReference(String reference) {
+    this.reference = reference;
   }
 
   public AssertionRequest getAssertionRequest() {

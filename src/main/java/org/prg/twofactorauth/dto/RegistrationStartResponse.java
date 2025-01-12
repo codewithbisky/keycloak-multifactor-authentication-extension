@@ -4,20 +4,18 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions;
 
-import java.util.UUID;
-
 @JsonInclude(Include.NON_NULL)
 public class RegistrationStartResponse {
-  private String flowId;
+  private String reference;
   private String jsonResponse;
   private PublicKeyCredentialCreationOptions credentialCreationOptions;
 
-  public String getFlowId() {
-    return flowId;
+  public String getReference() {
+    return reference;
   }
 
-  public void setFlowId(String flowId) {
-    this.flowId = flowId;
+  public void setReference(String reference) {
+    this.reference = reference;
   }
 
   public PublicKeyCredentialCreationOptions getCredentialCreationOptions() {

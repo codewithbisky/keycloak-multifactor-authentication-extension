@@ -56,9 +56,9 @@ public class WebAuthn2MFAAuthenticator implements Authenticator, CredentialValid
         String credential = context.getHttpRequest()
                 .getDecodedFormParameters()
                 .getFirst("credential");
-        String flowId = context.getHttpRequest()
+        String reference = context.getHttpRequest()
                 .getDecodedFormParameters()
-                .getFirst("flowId");
+                .getFirst("reference");
 
         if(StringUtils.isBlank(credential)){
 
@@ -71,7 +71,7 @@ public class WebAuthn2MFAAuthenticator implements Authenticator, CredentialValid
             return;
         }
         credential = sanitizedJson(credential);
-        if (completeAuthentication(username, credential, flowId, context)) {
+        if (completeAuthentication(username, credential, reference, context)) {
             context.success();
         } else {
             Response errorResponse = Response.status(Response.Status.UNAUTHORIZED)
@@ -89,7 +89,7 @@ public class WebAuthn2MFAAuthenticator implements Authenticator, CredentialValid
 
     private boolean completeAuthentication(String username,
                                            String credential,
-                                           String flowId,
+                                           String reference,
                                            AuthenticationFlowContext context) {
         // Implement WebAuthn assertion validation logic
         // Use a WebAuthn library (e.g., Yubico's webauthn-server)
@@ -109,7 +109,7 @@ public class WebAuthn2MFAAuthenticator implements Authenticator, CredentialValid
                 return false;
             }
             LoginFinishRequest request = new LoginFinishRequest();
-            request.setFlowId(flowId);
+            request.setFlowId(reference);
             request.setCredential(credential);
             Map<String, Object> map = userService.finishLogin(request);
             return map.containsKey("success");

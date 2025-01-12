@@ -76,7 +76,7 @@ public class WebAuthRegistrationResource {
     private RegistrationStartResponse createRegistrationStartResponse(
             PublicKeyCredentialCreationOptions options) {
         RegistrationStartResponse startResponse = new RegistrationStartResponse();
-        startResponse.setFlowId(UUID.randomUUID().toString());
+        startResponse.setReference(UUID.randomUUID().toString());
         startResponse.setCredentialCreationOptions(options);
         return startResponse;
     }
@@ -110,7 +110,7 @@ public class WebAuthRegistrationResource {
     private void logWorkflow(
             RegistrationStartRequest startRequest, RegistrationStartResponse startResponse) throws JsonProcessingException {
         RegistrationFlowEntity registrationEntity = new RegistrationFlowEntity();
-        registrationEntity.setId(startResponse.getFlowId());
+        registrationEntity.setId(startResponse.getReference());
         registrationEntity.setStartRequest(toJson(startRequest));
         registrationEntity.setStartResponse(toJson(startResponse));
         registrationEntity.setRegistrationResult(startResponse.getCredentialCreationOptions().toJson());
