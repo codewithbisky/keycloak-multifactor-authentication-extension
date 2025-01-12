@@ -1,15 +1,15 @@
 package org.prg.twofactorauth.dto;
 
 public class LoginFinishRequest {
-    private String flowId;
+    private String reference;
     private String credential;
 
-    public String getFlowId() {
-        return flowId;
+    public String getReference() {
+        return reference;
     }
 
-    public void setFlowId(String flowId) {
-        this.flowId = flowId;
+    public void setReference(String reference) {
+        this.reference = reference;
     }
 
     public String getCredential() {

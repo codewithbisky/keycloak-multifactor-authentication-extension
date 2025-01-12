@@ -277,7 +277,7 @@ public class UserServiceImpl implements UserService {
         addCredential(fidoCredential);
 
         RegistrationFinishResponse registrationFinishResponse = new RegistrationFinishResponse();
-        registrationFinishResponse.setFlowId(finishRequest.getReference());
+        registrationFinishResponse.setReference(finishRequest.getReference());
         registrationFinishResponse.setRegistrationComplete(true);
         logFinishStep(finishRequest, registrationResult, registrationFinishResponse);
         return registrationFinishResponse;
@@ -453,11 +453,11 @@ public class UserServiceImpl implements UserService {
     public Map<String, Object> finishLogin(LoginFinishRequest loginFinishRequest) throws IOException, AssertionFailedException {
 
         var loginFlowEntity =
-                findLoginFlowById(loginFinishRequest.getFlowId())
+                findLoginFlowById(loginFinishRequest.getReference())
                         .orElseThrow(
                                 () ->
                                         new RuntimeException(
-                                                "flow id " + loginFinishRequest.getFlowId() + " not found"));
+                                                "flow id " + loginFinishRequest.getReference() + " not found"));
 
 
         var assertionRequestJson = loginFlowEntity.getAssertionRequest();

@@ -109,7 +109,7 @@ public class WebAuthn2MFAAuthenticator implements Authenticator, CredentialValid
                 return false;
             }
             LoginFinishRequest request = new LoginFinishRequest();
-            request.setFlowId(reference);
+            request.setReference(reference);
             request.setCredential(credential);
             Map<String, Object> map = userService.finishLogin(request);
             return map.containsKey("success");

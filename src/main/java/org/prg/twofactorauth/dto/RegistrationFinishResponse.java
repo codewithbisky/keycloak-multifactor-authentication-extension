@@ -1,15 +1,15 @@
 package org.prg.twofactorauth.dto;
 
 public class RegistrationFinishResponse {
-  private String flowId;
+  private String reference;
   private boolean registrationComplete;
 
-  public String getFlowId() {
-    return flowId;
+  public String getReference() {
+    return reference;
   }
 
-  public void setFlowId(String flowId) {
-    this.flowId = flowId;
+  public void setReference(String reference) {
+    this.reference = reference;
   }
 
   public boolean isRegistrationComplete() {
