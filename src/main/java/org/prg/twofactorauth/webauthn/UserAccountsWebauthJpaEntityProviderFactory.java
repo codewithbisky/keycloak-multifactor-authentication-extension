@@ -5,13 +5,13 @@ import org.keycloak.connections.jpa.entityprovider.JpaEntityProviderFactory;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
-public class CustomWebauthJpaEntityProviderFactory implements JpaEntityProviderFactory {
+public class UserAccountsWebauthJpaEntityProviderFactory implements JpaEntityProviderFactory {
 
     protected static final String ID = "custom-webauth-jpa-provider";
 
     @Override
     public JpaEntityProvider create(KeycloakSession session) {
-        return new CustomWebauthJpaEntityProvider();
+        return new UserAccountsWebauthJpaEntityProvider();
     }
 
     @Override

@@ -1,2 +1,3 @@
 org.prg.twofactorauth.webauthn.WebAuthn2MFAAuthenticatorFactory
 org.prg.twofactorauth.MultiFactorAuthenticatorFactory
+org.prg.twofactorauth.email.EmailAuthenticatorDirectGrantFactory

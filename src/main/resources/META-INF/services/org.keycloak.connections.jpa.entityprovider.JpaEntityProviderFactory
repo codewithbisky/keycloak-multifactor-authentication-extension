@@ -1,3 +1,4 @@
-org.prg.twofactorauth.webauthn.CustomWebauthJpaEntityProviderFactory
+org.prg.twofactorauth.webauthn.UserAccountsWebauthJpaEntityProviderFactory
 org.prg.twofactorauth.webauthn.WebauthnRegistrationFlowJpaEntityProviderFactory
 org.prg.twofactorauth.webauthn.WebauthnLoginFlowJpaEntityProviderFactory
+org.prg.twofactorauth.email.TwoFactorOtpJpaEntityProviderFactory

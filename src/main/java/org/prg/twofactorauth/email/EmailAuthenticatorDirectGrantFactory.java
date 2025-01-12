@@ -1,4 +1,4 @@
-package org.prg.twofactorauth;
+package org.prg.twofactorauth.email;
 
 import org.keycloak.Config;
 import org.keycloak.authentication.Authenticator;
@@ -8,15 +8,15 @@ import org.keycloak.models.AuthenticationExecutionModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.credential.OTPCredentialModel;
 import org.keycloak.provider.ProviderConfigProperty;
-import org.prg.twofactorauth.email.EmailConstants;
+import org.prg.twofactorauth.MultiFactorAuthenticator;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class MultiFactorAuthenticatorFactory implements AuthenticatorFactory, ConfigurableAuthenticatorFactory {
+public class EmailAuthenticatorDirectGrantFactory implements AuthenticatorFactory, ConfigurableAuthenticatorFactory {
 
-    private static final String PROVIDER_ID = "multi-factor-authenticator";
-    public static final String ENABLE_EMAIL_2ND_AUTHENTICATION = "enableEmail2ndAuthentication";
+    public static final String PROVIDER_ID = "email-authenticator-direct-grant";
 
     @Override
     public String getId() {
@@ -25,7 +25,7 @@ public class MultiFactorAuthenticatorFactory implements AuthenticatorFactory, Co
 
     @Override
     public Authenticator create(KeycloakSession session) {
-        return new MultiFactorAuthenticator();
+        return new EmailAuthenticatorDirectGrant();
     }
 
     @Override
@@ -35,12 +35,12 @@ public class MultiFactorAuthenticatorFactory implements AuthenticatorFactory, Co
 
     @Override
     public String getDisplayType() {
-        return "MultiFactor Authenticator Direct Grant";
+        return "Email Authenticator Direct Grant";
     }
 
     @Override
     public String getHelpText() {
-        return "Authenticates users using multi factor authentications OTP and WebAuthn (CodeWithBisky.com)";
+        return "Authenticates user by email code (CodeWithBisky.com)";
     }
 
     @Override
@@ -67,9 +67,7 @@ public class MultiFactorAuthenticatorFactory implements AuthenticatorFactory, Co
                         ProviderConfigProperty.STRING_TYPE, String.valueOf(EmailConstants.DEFAULT_LENGTH)),
                 new ProviderConfigProperty(EmailConstants.CODE_TTL, "Time-to-live",
                         "The time to live in seconds for the code to be valid.", ProviderConfigProperty.STRING_TYPE,
-                        String.valueOf(EmailConstants.DEFAULT_TTL)),
-                new ProviderConfigProperty(ENABLE_EMAIL_2ND_AUTHENTICATION, "Email 2nd Authentication", "Allow email 2nd Authentication for every user", ProviderConfigProperty.BOOLEAN_TYPE, false)
-        );
+                        String.valueOf(EmailConstants.DEFAULT_TTL)));
     }
 
     @Override

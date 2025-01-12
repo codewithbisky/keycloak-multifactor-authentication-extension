@@ -6,7 +6,7 @@ import org.prg.twofactorauth.webauthn.entity.UserAccountEntity;
 
 import java.util.List;
 
-public class CustomWebauthJpaEntityProvider implements JpaEntityProvider {
+public class UserAccountsWebauthJpaEntityProvider implements JpaEntityProvider {
 
     // List of your JPA entities (custom entities).
     @Override
@@ -26,7 +26,7 @@ public class CustomWebauthJpaEntityProvider implements JpaEntityProvider {
     // Helper method, which will be used internally by Liquibase.
     @Override
     public String getFactoryId() {
-        return CustomWebauthJpaEntityProviderFactory.ID;
+        return UserAccountsWebauthJpaEntityProviderFactory.ID;
     }
 
 
