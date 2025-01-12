@@ -68,8 +68,21 @@ public class EmailAuthenticatorDirectGrant implements Authenticator {
             return;
         }
         TwoFactorOtpEntity twoFactorOtpEntity1 = twoFactorOtpEntity.get();
+        if(!userId.equals(twoFactorOtpEntity1.getUserId())){
+            context.getEvent().user(userModel).error("user_id_mismatch");
+            Response challengeResponse = this.errorResponse(Response.Status.BAD_REQUEST.getStatusCode(), "user_id_mismatch");
+            context.failure(AuthenticationFlowError.INVALID_USER, challengeResponse);
+            return;
+        }
 
-        String code = twoFactorOtpEntity1.getOtp();
+        if(twoFactorOtpEntity1.getStatus().equals(TwoFactorOtpStatus.VALID.toString())){
+            context.getEvent().user(userModel).error("code_already_used");
+            Response challengeResponse = this.errorResponse(Response.Status.BAD_REQUEST.getStatusCode(), "code_already_used");
+            context.failure(AuthenticationFlowError.INVALID_USER, challengeResponse);
+            return;
+        }
+
+        String code = twoFactorOtpEntity1.getCode();
         String ttl = String.valueOf(twoFactorOtpEntity1.getTtl());
 
         if (verificationCode.equals(code)) {
@@ -239,7 +252,6 @@ public class EmailAuthenticatorDirectGrant implements Authenticator {
 
             // Commit transaction
             entityManager.getTransaction().commit();
-            entityManager.close();
         } catch (Exception e) {
             logger.error("EmailAuthenticatorDirectGrant (updateOtpStatus) Error during native update: " + e.getMessage());
             e.printStackTrace();

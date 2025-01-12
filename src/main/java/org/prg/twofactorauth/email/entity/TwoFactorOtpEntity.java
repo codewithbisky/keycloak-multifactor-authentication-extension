@@ -26,8 +26,8 @@ public class TwoFactorOtpEntity {
     @Column(name = "status", columnDefinition = "TEXT")
     private String status;
 
-    @Column(name = "otp", columnDefinition = "TEXT")
-    private String otp;
+    @Column(name = "code", columnDefinition = "TEXT")
+    private String code;
 
     @Column(name = "ttl")
     private Long ttl;
