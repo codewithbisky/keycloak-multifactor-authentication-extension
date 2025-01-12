@@ -3,7 +3,6 @@ package org.prg.twofactorauth.rest;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
 import org.keycloak.credential.CredentialModel;
-import org.keycloak.credential.CredentialProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
@@ -15,12 +14,6 @@ import org.keycloak.utils.MediaType;
 import org.keycloak.utils.TotpUtils;
 import org.prg.twofactorauth.dto.TwoFactorAuthSecretData;
 import org.prg.twofactorauth.dto.TwoFactorAuthSubmission;
-import org.prg.twofactorauth.webauthn.credential.WebAuthnCredentialModel;
-import org.prg.twofactorauth.webauthn.credential.WebauthnCredentialProvider;
-import org.prg.twofactorauth.webauthn.credential.WebauthnCredentialProviderFactory;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class User2FAResource {
 
@@ -76,32 +69,5 @@ public class User2FAResource {
         return Response.noContent().build();
     }
 
-    @POST
-    @Path("methods")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response registered() {
-
-        List<String> credentials = new ArrayList<>();
-        boolean webAuthnConfigured = webAuthnConfigured();
-        if (webAuthnConfigured) {
-            credentials.add("webauthn");
-        }
-        boolean otp = user.credentialManager().getStoredCredentialsByTypeStream("otp").findAny().isPresent();
-        if (otp) {
-            credentials.add("otp");
-        }
-        return Response.accepted().entity(credentials).build();
-    }
-
-    public boolean webAuthnConfigured() {
-
-        return getCredentialProvider(session).isConfiguredFor(session.getContext().getRealm(), user, WebAuthnCredentialModel.TYPE);
-    }
-
-    public WebauthnCredentialProvider getCredentialProvider(KeycloakSession keycloakSession) {
-        return (WebauthnCredentialProvider) keycloakSession.getProvider(CredentialProvider.class, WebauthnCredentialProviderFactory.PROVIDER_ID);
-
-    }
 
 }

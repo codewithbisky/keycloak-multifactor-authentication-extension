@@ -12,6 +12,7 @@ import org.keycloak.credential.CredentialProvider;
 import org.keycloak.credential.OTPCredentialProvider;
 import org.keycloak.models.AuthenticatorConfigModel;
 import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.prg.twofactorauth.dto.EmailReferenceResponse;
 import org.prg.twofactorauth.dto.ErrorDto;
@@ -23,6 +24,7 @@ import org.prg.twofactorauth.webauthn.credential.WebAuthnCredentialModel;
 import org.prg.twofactorauth.webauthn.credential.WebauthnCredentialProvider;
 import org.prg.twofactorauth.webauthn.credential.WebauthnCredentialProviderFactory;
 
+import java.util.List;
 import java.util.Objects;
 
 import static org.prg.twofactorauth.MultiFactorAuthenticatorFactory.ENABLE_EMAIL_2ND_AUTHENTICATION;
@@ -57,7 +59,7 @@ public class MultiFactorAuthenticator implements Authenticator {
 
         AuthenticatorConfigModel config = context.getAuthenticatorConfig();
         boolean allowEmailAuthentication = config != null && Boolean.parseBoolean(config.getConfig().get(ENABLE_EMAIL_2ND_AUTHENTICATION));
-        logger.info("Allow Email Authentication "+allowEmailAuthentication);
+        logger.info("Allow Email Authentication " + allowEmailAuthentication);
         if (otpValidationSuccess || webAuthnValidationSuccess) {
             context.success();
         } else if (isOtpConfigured || isWebAuthnConfigured) {
@@ -170,5 +172,16 @@ public class MultiFactorAuthenticator implements Authenticator {
 
     public EmailAuthenticatorDirectGrant getEmailAuthenticatorProvider(KeycloakSession keycloakSession) {
         return (EmailAuthenticatorDirectGrant) keycloakSession.getProvider(Authenticator.class, EmailAuthenticatorDirectGrantFactory.PROVIDER_ID);
+    }
+
+    public AuthenticatorConfigModel getAuthenticatorConfigByKey(KeycloakSession session, String providerId) {
+        RealmModel realm = session.getContext().getRealm();
+        List<AuthenticatorConfigModel> configs = realm.getAuthenticatorConfigsStream().toList();
+        for (AuthenticatorConfigModel config : configs) {
+            if (config.getConfig() != null && config.getConfig().containsKey(providerId)) {
+                return config;
+            }
+        }
+        return null; // Return null if no matching config is found
     }
 }

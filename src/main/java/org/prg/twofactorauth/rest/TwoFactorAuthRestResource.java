@@ -2,12 +2,17 @@ package org.prg.twofactorauth.rest;
 
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
+import org.jboss.logging.Logger;
+import org.keycloak.authentication.Authenticator;
 import org.keycloak.credential.CredentialProvider;
+import org.keycloak.models.AuthenticatorConfigModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.UserModel;
 import org.keycloak.services.managers.AppAuthManager;
 import org.keycloak.services.managers.AuthenticationManager;
 import org.keycloak.utils.MediaType;
+import org.prg.twofactorauth.MultiFactorAuthenticator;
+import org.prg.twofactorauth.MultiFactorAuthenticatorFactory;
 import org.prg.twofactorauth.webauthn.credential.WebAuthnCredentialModel;
 import org.prg.twofactorauth.webauthn.credential.WebauthnCredentialProvider;
 import org.prg.twofactorauth.webauthn.credential.WebauthnCredentialProviderFactory;
@@ -17,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TwoFactorAuthRestResource {
+    private static final Logger logger = Logger.getLogger(TwoFactorAuthRestResource.class);
 
     private final KeycloakSession session;
     private final AuthenticationManager.AuthResult auth;
@@ -78,6 +84,15 @@ public class TwoFactorAuthRestResource {
         if (otp) {
             credentials.add("otp");
         }
+        MultiFactorAuthenticator authenticatorProvider = getMultiFactorAuthenticatorProvider(session);
+
+        AuthenticatorConfigModel authenticatorConfig = authenticatorProvider.getAuthenticatorConfigByKey(session, MultiFactorAuthenticatorFactory.ENABLE_EMAIL_2ND_AUTHENTICATION);
+        if (authenticatorConfig != null && authenticatorConfig.getConfig() != null) {
+            String emailConfig = authenticatorConfig.getConfig().get(MultiFactorAuthenticatorFactory.ENABLE_EMAIL_2ND_AUTHENTICATION);
+            if (Boolean.parseBoolean(emailConfig)) {
+                credentials.add("email");
+            }
+        }
         return Response.ok().entity(credentials).build();
     }
 
@@ -99,5 +114,14 @@ public class TwoFactorAuthRestResource {
         }
         return user;
     }
+
+
+
+
+
+    public MultiFactorAuthenticator getMultiFactorAuthenticatorProvider(KeycloakSession keycloakSession) {
+        return (MultiFactorAuthenticator) keycloakSession.getProvider(Authenticator.class, MultiFactorAuthenticatorFactory.PROVIDER_ID);
+    }
+
 
 }

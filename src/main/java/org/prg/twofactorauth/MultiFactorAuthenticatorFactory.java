@@ -15,7 +15,7 @@ import java.util.List;
 
 public class MultiFactorAuthenticatorFactory implements AuthenticatorFactory, ConfigurableAuthenticatorFactory {
 
-    private static final String PROVIDER_ID = "multi-factor-authenticator";
+    public static final String PROVIDER_ID = "multi-factor-authenticator";
     public static final String ENABLE_EMAIL_2ND_AUTHENTICATION = "enableEmail2ndAuthentication";
 
     @Override
