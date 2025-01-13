@@ -13,6 +13,7 @@ import org.keycloak.credential.CredentialProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.UserModel;
 import org.prg.twofactorauth.dto.*;
+import org.prg.twofactorauth.exception.TwoFactoBaseException;
 import org.prg.twofactorauth.util.JsonUtils;
 import org.prg.twofactorauth.webauthn.credential.WebAuthnCredentialModel;
 import org.prg.twofactorauth.webauthn.credential.WebauthnCredentialProvider;
@@ -450,7 +451,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Transactional
-    public Map<String, Object> finishLogin(LoginFinishRequest loginFinishRequest) throws IOException, AssertionFailedException {
+    public Map<String, Object> finishLogin(LoginFinishRequest loginFinishRequest,String username) throws IOException, AssertionFailedException {
 
         var loginFlowEntity =
                 findLoginFlowById(loginFinishRequest.getReference())
@@ -459,6 +460,9 @@ public class UserServiceImpl implements UserService {
                                         new RuntimeException(
                                                 "flow id " + loginFinishRequest.getReference() + " not found"));
 
+        if(!username.equals(loginFlowEntity.getUsername())){
+            throw new TwoFactoBaseException("Invalid username used to access the credential");
+        }
 
         var assertionRequestJson = loginFlowEntity.getAssertionRequest();
         AssertionRequest assertionRequest;

@@ -36,17 +36,7 @@ public class WebAuthLoginResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response loginStart(final LoginStartRequest request) throws JsonProcessingException {
 
-        return Response.accepted().entity(userService.startLogin(request)).build();
-    }
-
-    @POST
-    @Path("finish")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response loginFinish(final LoginFinishRequest request) throws  IOException, AssertionFailedException {
-
-        Map<String, Object> result = this.userService.finishLogin(request);
-        return Response.accepted().entity(result).build();
+        return Response.ok().entity(userService.startLogin(request)).build();
     }
 
 

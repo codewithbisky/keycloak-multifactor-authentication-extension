@@ -111,7 +111,7 @@ public class WebAuthn2MFAAuthenticator implements Authenticator, CredentialValid
             LoginFinishRequest request = new LoginFinishRequest();
             request.setReference(reference);
             request.setCredential(credential);
-            Map<String, Object> map = userService.finishLogin(request);
+            Map<String, Object> map = userService.finishLogin(request,user.getUsername());
             return map.containsKey("success");
         } catch (Exception e) {
             logger.error("WebAuthn2MFAAuthenticator completeAuthentication " + e);
