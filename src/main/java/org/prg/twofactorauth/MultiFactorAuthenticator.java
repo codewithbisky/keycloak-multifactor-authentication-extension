@@ -29,7 +29,7 @@ import java.util.Objects;
 
 import static org.prg.twofactorauth.MultiFactorAuthenticatorFactory.ENABLE_EMAIL_2ND_AUTHENTICATION;
 import static org.prg.twofactorauth.util.KeycloakSessionUtil.getUserSupportedMfa;
-import static org.prg.twofactorauth.util.ProvidersUtil.getEmailAuthenticatorProvider;
+import static org.prg.twofactorauth.util.ProvidersUtil.*;
 
 public class MultiFactorAuthenticator implements Authenticator {
 
@@ -43,6 +43,17 @@ public class MultiFactorAuthenticator implements Authenticator {
         if (userSupportedMfa.isEmpty()) {
             context.success();
         } else {
+
+            boolean isOtpConfigured =
+                    ((OTPCredentialProvider) getCredentialProvider(
+                            context.getSession(), "keycloak-otp"))
+                            .isConfiguredFor(context.getRealm(), user, "otp");
+
+            boolean isWebAuthnConfigured = getWebauthnCredentialProvider(
+                    context.getSession())
+                    .isConfiguredFor(context.getRealm(), user,
+                            WebAuthnCredentialModel.TYPE);
+
             String twoFactorType = context.getHttpRequest()
                     .getDecodedFormParameters()
                     .getFirst("2nd_factor_type");
@@ -50,12 +61,12 @@ public class MultiFactorAuthenticator implements Authenticator {
                 Response challengeResponse = this.errorResponse(Response.Status.UNAUTHORIZED.getStatusCode(),
                         "2nd_factor_type missing");
                 context.failure(AuthenticationFlowError.INVALID_USER, challengeResponse);
-            } else if (Objects.equals(TwoFactorType.otp.toString(), twoFactorType)) {
+            } else if (Objects.equals(TwoFactorType.otp.toString(), twoFactorType) && isOtpConfigured) {
                 boolean isValid = validateOtp(context);
                 if (isValid) {
                     context.success();
                 }
-            } else if (Objects.equals(TwoFactorType.webauthn.toString(), twoFactorType)) {
+            } else if (Objects.equals(TwoFactorType.webauthn.toString(), twoFactorType) && isWebAuthnConfigured) {
                 boolean isValid = validateWebAuthn(context);
                 if (isValid) {
                     context.success();
@@ -67,7 +78,7 @@ public class MultiFactorAuthenticator implements Authenticator {
                 }
             } else {
                 Response challengeResponse = this.errorResponse(Response.Status.UNAUTHORIZED.getStatusCode(),
-                        "2nd_authentication_required");
+                        "2nd_authentication_required "+userSupportedMfa);
                 context.failure(AuthenticationFlowError.INVALID_USER, challengeResponse);
             }
         }

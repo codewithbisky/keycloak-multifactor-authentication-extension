@@ -23,12 +23,16 @@ public final class ProvidersUtil {
     }
 
 
-    public static WebauthnCredentialProvider getCredentialProvider(KeycloakSession keycloakSession) {
+    public static WebauthnCredentialProvider getWebauthnCredentialProvider(KeycloakSession keycloakSession) {
         return (WebauthnCredentialProvider) keycloakSession.getProvider(CredentialProvider.class, WebauthnCredentialProviderFactory.PROVIDER_ID);
 
     }
 
     public static EmailAuthenticatorDirectGrant getEmailAuthenticatorProvider(KeycloakSession keycloakSession) {
         return (EmailAuthenticatorDirectGrant) keycloakSession.getProvider(Authenticator.class, EmailAuthenticatorDirectGrantFactory.PROVIDER_ID);
+    }
+
+    public static CredentialProvider getCredentialProvider(KeycloakSession keycloakSession, String providerId) {
+        return keycloakSession.getProvider(CredentialProvider.class, providerId);
     }
 }

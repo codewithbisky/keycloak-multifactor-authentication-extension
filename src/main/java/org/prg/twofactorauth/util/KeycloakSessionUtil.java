@@ -10,7 +10,7 @@ import org.prg.twofactorauth.webauthn.credential.WebAuthnCredentialModel;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.prg.twofactorauth.util.ProvidersUtil.getCredentialProvider;
+import static org.prg.twofactorauth.util.ProvidersUtil.getWebauthnCredentialProvider;
 import static org.prg.twofactorauth.util.ProvidersUtil.getMultiFactorAuthenticatorProvider;
 
 public final class KeycloakSessionUtil {
@@ -45,6 +45,6 @@ public final class KeycloakSessionUtil {
     }
 
     public static boolean webAuthnConfigured(UserModel user, KeycloakSession session) {
-        return getCredentialProvider(session).isConfiguredFor(session.getContext().getRealm(), user, WebAuthnCredentialModel.TYPE);
+        return getWebauthnCredentialProvider(session).isConfiguredFor(session.getContext().getRealm(), user, WebAuthnCredentialModel.TYPE);
     }
 }
