@@ -3,8 +3,6 @@ package org.prg.twofactorauth.rest;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
-import org.keycloak.authentication.Authenticator;
-import org.keycloak.credential.CredentialProvider;
 import org.keycloak.models.AuthenticatorConfigModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.UserModel;
@@ -13,13 +11,17 @@ import org.keycloak.services.managers.AuthenticationManager;
 import org.keycloak.utils.MediaType;
 import org.prg.twofactorauth.MultiFactorAuthenticator;
 import org.prg.twofactorauth.MultiFactorAuthenticatorFactory;
-import org.prg.twofactorauth.webauthn.credential.WebAuthnCredentialModel;
-import org.prg.twofactorauth.webauthn.credential.WebauthnCredentialProvider;
-import org.prg.twofactorauth.webauthn.credential.WebauthnCredentialProviderFactory;
+import org.prg.twofactorauth.dto.EmailReferenceResponse;
+import org.prg.twofactorauth.dto.TwoFactorAuthSubmission;
+import org.prg.twofactorauth.email.EmailAuthenticatorDirectGrant;
+import org.prg.twofactorauth.email.EmailConstants;
+import org.prg.twofactorauth.email.EmailData;
+import org.prg.twofactorauth.util.ProvidersUtil;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
+
+import static org.prg.twofactorauth.util.KeycloakSessionUtil.getUserSupportedMfa;
+import static org.prg.twofactorauth.util.ProvidersUtil.getMultiFactorAuthenticatorProvider;
 
 public class TwoFactorAuthRestResource {
     private static final Logger logger = Logger.getLogger(TwoFactorAuthRestResource.class);
@@ -45,10 +47,7 @@ public class TwoFactorAuthRestResource {
             var auth = new AppAuthManager.BearerTokenAuthenticator(session);
             auth.authenticate();
             throw new NotAuthorizedException("Bearer");
-        } else if (auth.getToken().getRealmAccess() == null || !auth.getToken().getRealmAccess().isUserInRole("manage-2fa")) {
-            throw new ForbiddenException("Does not have realm manage-2fa role");
         }
-
         final UserModel user = this.session.users().getUserById(this.session.getContext().getRealm(), userid);
         if (user == null) {
             throw new BadRequestException("invalid user");
@@ -75,35 +74,11 @@ public class TwoFactorAuthRestResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response methods(@QueryParam("username") final String username) {
         final UserModel user = getUserByUsername(username);
-        List<String> credentials = new ArrayList<>();
-        boolean webAuthnConfigured = webAuthnConfigured(user);
-        if (webAuthnConfigured) {
-            credentials.add("webauthn");
-        }
-        boolean otp = user.credentialManager().getStoredCredentialsByTypeStream("otp").findAny().isPresent();
-        if (otp) {
-            credentials.add("otp");
-        }
-        MultiFactorAuthenticator authenticatorProvider = getMultiFactorAuthenticatorProvider(session);
-
-        AuthenticatorConfigModel authenticatorConfig = authenticatorProvider.getAuthenticatorConfigByKey(session, MultiFactorAuthenticatorFactory.ENABLE_EMAIL_2ND_AUTHENTICATION);
-        if (authenticatorConfig != null && authenticatorConfig.getConfig() != null) {
-            String emailConfig = authenticatorConfig.getConfig().get(MultiFactorAuthenticatorFactory.ENABLE_EMAIL_2ND_AUTHENTICATION);
-            if (Boolean.parseBoolean(emailConfig)) {
-                credentials.add("email");
-            }
-        }
-        return Response.ok().entity(credentials).build();
+        return Response.ok().entity(getUserSupportedMfa(user,session)).build();
     }
 
-    public boolean webAuthnConfigured(UserModel user) {
-        return getCredentialProvider(session).isConfiguredFor(session.getContext().getRealm(), user, WebAuthnCredentialModel.TYPE);
-    }
 
-    public WebauthnCredentialProvider getCredentialProvider(KeycloakSession keycloakSession) {
-        return (WebauthnCredentialProvider) keycloakSession.getProvider(CredentialProvider.class, WebauthnCredentialProviderFactory.PROVIDER_ID);
 
-    }
 
 
     private UserModel getUserByUsername(final String username) {
@@ -115,12 +90,37 @@ public class TwoFactorAuthRestResource {
         return user;
     }
 
+    @POST
+    @Path("send")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response sendEmail(@QueryParam("username") final String username,
+                              @QueryParam("2nd_factor_type") final String type) {
 
+        if (type == null || !type.equals("email")) {
+            throw new BadRequestException("invalid 2nd factor type: " + type);
+        }
+        final UserModel user = getUserByUsername(username);
+        return sendEmail(type, user);
+    }
 
-
-
-    public MultiFactorAuthenticator getMultiFactorAuthenticatorProvider(KeycloakSession keycloakSession) {
-        return (MultiFactorAuthenticator) keycloakSession.getProvider(Authenticator.class, MultiFactorAuthenticatorFactory.PROVIDER_ID);
+    private Response sendEmail(String type, UserModel user) {
+        EmailAuthenticatorDirectGrant emailAuthenticatorProvider = ProvidersUtil.getEmailAuthenticatorProvider(session);
+        MultiFactorAuthenticator authenticatorProvider = getMultiFactorAuthenticatorProvider(session);
+        AuthenticatorConfigModel authenticatorConfig = authenticatorProvider
+                .getAuthenticatorConfigByKey(session, MultiFactorAuthenticatorFactory.ENABLE_EMAIL_2ND_AUTHENTICATION);
+        int length = EmailConstants.DEFAULT_LENGTH;
+        int ttl = EmailConstants.DEFAULT_TTL;
+        if (authenticatorConfig != null && authenticatorConfig.getConfig() != null
+                && authenticatorConfig.getConfig().containsKey(EmailConstants.CODE_LENGTH) &&
+                authenticatorConfig.getConfig().containsKey(EmailConstants.CODE_TTL)) {
+            length = Integer.parseInt(authenticatorConfig.getConfig().get(EmailConstants.CODE_LENGTH));
+            ttl = Integer.parseInt(authenticatorConfig.getConfig().get(EmailConstants.CODE_TTL));
+        }
+        EmailData emailData = emailAuthenticatorProvider.generateAndSendEmailCode(session, user, length, ttl);
+        return Response.ok()
+                .entity(new EmailReferenceResponse(emailData.reference(), type))
+                .build();
     }
 
 

@@ -19,21 +19,20 @@ public class User2FAResource {
 
     private final KeycloakSession session;
     private final UserModel user;
-
-    public final int TotpSecretLength = 20;
+    private static final int totpSecretLength = 20;
 
     public User2FAResource(KeycloakSession session, UserModel user) {
         this.session = session;
         this.user = user;
     }
 
-    @GET
-    @Path("generate-2fa")
+    @POST
+    @Path("totp/generate")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response generate2FA() {
+    public Response totpGenerate() {
         final RealmModel realm = this.session.getContext().getRealm();
-        final String totpSecret = HmacOTP.generateSecret(TotpSecretLength);
+        final String totpSecret = HmacOTP.generateSecret(totpSecretLength);
         final String totpSecretQrCode = TotpUtils.qrCode(totpSecret, realm, user);
         final String totpSecretEncoded = Base32.encode(totpSecret.getBytes());
         return Response.ok(new TwoFactorAuthSecretData(totpSecretEncoded, totpSecretQrCode)).build();
@@ -41,17 +40,17 @@ public class User2FAResource {
 
 
     @POST
-    @Path("submit-2fa")
+    @Path("totp/complete")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response register2FA(final TwoFactorAuthSubmission submission) {
+    public Response totpComplete(final TwoFactorAuthSubmission submission) {
         if (!submission.isValid()) {
             throw new BadRequestException("one or more data field for otp registration are blank");
         }
 
         final String encodedTotpSecret = submission.getEncodedTotpSecret();
         final String totpSecret = new String(Base32.decode(encodedTotpSecret));
-        if (totpSecret.length() < TotpSecretLength) {
+        if (totpSecret.length() < totpSecretLength) {
             throw new BadRequestException("totp secret is invalid");
         }
 

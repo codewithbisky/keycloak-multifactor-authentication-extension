@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Objects;
 
 import static org.prg.twofactorauth.MultiFactorAuthenticatorFactory.ENABLE_EMAIL_2ND_AUTHENTICATION;
+import static org.prg.twofactorauth.util.KeycloakSessionUtil.getUserSupportedMfa;
+import static org.prg.twofactorauth.util.ProvidersUtil.getEmailAuthenticatorProvider;
 
 public class MultiFactorAuthenticator implements Authenticator {
 
@@ -37,42 +39,37 @@ public class MultiFactorAuthenticator implements Authenticator {
     public void authenticate(AuthenticationFlowContext context) {
 
         UserModel user = context.getUser();
-        boolean isOtpConfigured =
-                ((OTPCredentialProvider) getCredentialProvider(
-                        context.getSession(), "keycloak-otp"))
-                        .isConfiguredFor(context.getRealm(), user, "otp");
-        boolean isWebAuthnConfigured = ((WebauthnCredentialProvider) getCredentialProvider(
-                context.getSession(), WebauthnCredentialProviderFactory.PROVIDER_ID))
-                .isConfiguredFor(context.getRealm(), user,
-                        WebAuthnCredentialModel.TYPE);
-
-        boolean otpValidationSuccess = false;
-        boolean webAuthnValidationSuccess = false;
-
-        if (isOtpConfigured) {
-            otpValidationSuccess = validateOtp(context);
-        }
-
-        if (!otpValidationSuccess && isWebAuthnConfigured) {
-            webAuthnValidationSuccess = validateWebAuthn(context);
-        }
-
-        AuthenticatorConfigModel config = context.getAuthenticatorConfig();
-        boolean allowEmailAuthentication = config != null && Boolean.parseBoolean(config.getConfig().get(ENABLE_EMAIL_2ND_AUTHENTICATION));
-        logger.info("Allow Email Authentication " + allowEmailAuthentication);
-        if (otpValidationSuccess || webAuthnValidationSuccess) {
+        List<String> userSupportedMfa = getUserSupportedMfa(user, context.getSession());
+        if (userSupportedMfa.isEmpty()) {
             context.success();
-        } else if (isOtpConfigured || isWebAuthnConfigured) {
-            Response challengeResponse = this.errorResponse(Response.Status.UNAUTHORIZED.getStatusCode(),
-                    "2nd authentication is required");
-            context.failure(AuthenticationFlowError.INVALID_USER, challengeResponse);
-        } else if (allowEmailAuthentication) {
-            boolean validateEmail = validateEmail(context);
-            if (validateEmail) {
-                context.success();
-            }
         } else {
-            context.success();
+            String twoFactorType = context.getHttpRequest()
+                    .getDecodedFormParameters()
+                    .getFirst("2nd_factor_type");
+            if (StringUtils.isBlank(twoFactorType)) {
+                Response challengeResponse = this.errorResponse(Response.Status.UNAUTHORIZED.getStatusCode(),
+                        "2nd_factor_type missing");
+                context.failure(AuthenticationFlowError.INVALID_USER, challengeResponse);
+            } else if (Objects.equals(TwoFactorType.otp.toString(), twoFactorType)) {
+                boolean isValid = validateOtp(context);
+                if (isValid) {
+                    context.success();
+                }
+            } else if (Objects.equals(TwoFactorType.webauthn.toString(), twoFactorType)) {
+                boolean isValid = validateWebAuthn(context);
+                if (isValid) {
+                    context.success();
+                }
+            } else if (Objects.equals(TwoFactorType.email.toString(), twoFactorType)) {
+                boolean isValid = validateEmail(context);
+                if (isValid) {
+                    context.success();
+                }
+            } else {
+                Response challengeResponse = this.errorResponse(Response.Status.UNAUTHORIZED.getStatusCode(),
+                        "2nd_authentication_required");
+                context.failure(AuthenticationFlowError.INVALID_USER, challengeResponse);
+            }
         }
     }
 
@@ -85,12 +82,14 @@ public class MultiFactorAuthenticator implements Authenticator {
         String reference = context.getHttpRequest()
                 .getDecodedFormParameters()
                 .getFirst("reference");
-        if (StringUtils.isBlank(verificationCode) || StringUtils.isBlank(reference)) {
+        if (StringUtils.isBlank(verificationCode)) {
+            Response challengeResponse = this.errorResponse(Response.Status.UNAUTHORIZED.getStatusCode(),
+                    "verification_code missing");
+            context.failure(AuthenticationFlowError.INVALID_USER, challengeResponse);
+        } else if (StringUtils.isBlank(reference)) {
 
-            EmailData emailData = emailAuthenticatorProvider.generateAndSendEmailCode(context);
-            emailAuthenticatorProvider.authenticate(context);
-            Response challengeResponse = this.emailRerenceResponse(Response.Status.BAD_REQUEST.getStatusCode(),
-                    emailData.reference());
+            Response challengeResponse = this.errorResponse(Response.Status.UNAUTHORIZED.getStatusCode(),
+                    "reference missing");
             context.failure(AuthenticationFlowError.INVALID_USER, challengeResponse);
         } else {
             emailAuthenticatorProvider.authenticate(context);
@@ -117,6 +116,24 @@ public class MultiFactorAuthenticator implements Authenticator {
     private boolean validateWebAuthn(AuthenticationFlowContext context) {
         WebAuthn2MFAAuthenticator webAuthnAuthenticator = new WebAuthn2MFAAuthenticator();
         try {
+            String credential = context.getHttpRequest()
+                    .getDecodedFormParameters()
+                    .getFirst("credential");
+            String reference = context.getHttpRequest()
+                    .getDecodedFormParameters()
+                    .getFirst("reference");
+            if (StringUtils.isBlank(credential)) {
+                Response challengeResponse = this.errorResponse(Response.Status.UNAUTHORIZED.getStatusCode(),
+                        "credential missing");
+                context.failure(AuthenticationFlowError.INVALID_USER, challengeResponse);
+                return false;
+            } else if (StringUtils.isBlank(reference)) {
+
+                Response challengeResponse = this.errorResponse(Response.Status.UNAUTHORIZED.getStatusCode(),
+                        "reference missing");
+                context.failure(AuthenticationFlowError.INVALID_USER, challengeResponse);
+                return false;
+            }
             webAuthnAuthenticator.authenticate(context);
             FlowStatus status = context.getStatus();
             logger.info("MultiFactorAuthenticator validateWebAuthn " + status);
@@ -153,26 +170,14 @@ public class MultiFactorAuthenticator implements Authenticator {
     }
 
 
-    public CredentialProvider getCredentialProvider(KeycloakSession keycloakSession, String providerId) {
-        return keycloakSession.getProvider(CredentialProvider.class, providerId);
-    }
-
     private Response errorResponse(int statusCode, String invalidUserCredentials) {
         return Response.status(statusCode)
                 .entity(new ErrorDto(invalidUserCredentials))
                 .build();
     }
 
-    private Response emailRerenceResponse(int statusCode, String reference) {
-        return Response.status(statusCode)
-                .entity(new EmailReferenceResponse(reference))
-                .build();
-    }
 
 
-    public EmailAuthenticatorDirectGrant getEmailAuthenticatorProvider(KeycloakSession keycloakSession) {
-        return (EmailAuthenticatorDirectGrant) keycloakSession.getProvider(Authenticator.class, EmailAuthenticatorDirectGrantFactory.PROVIDER_ID);
-    }
 
     public AuthenticatorConfigModel getAuthenticatorConfigByKey(KeycloakSession session, String providerId) {
         RealmModel realm = session.getContext().getRealm();

@@ -258,4 +258,17 @@ public class EmailAuthenticatorDirectGrant implements Authenticator {
 
         }
     }
+
+
+
+
+    public EmailData generateAndSendEmailCode(KeycloakSession keycloakSession,
+                                              UserModel userModel,int length, int ttl) {
+
+        String code = SecretGenerator.getInstance().randomString(length, SecretGenerator.DIGITS);
+        sendEmailWithCode(keycloakSession, keycloakSession.getContext().getRealm(), userModel, code, ttl);
+        EmailData emailData = new EmailData(UUID.randomUUID().toString(), code, System.currentTimeMillis() + (ttl * 1000L), userModel.getId());
+        saveTwoFactoOtp(emailData, keycloakSession);
+        return emailData;
+    }
 }
