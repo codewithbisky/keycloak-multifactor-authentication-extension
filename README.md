@@ -1,54 +1,174 @@
-# Keycloak MultiFactor Rest API Provider
 
-## Overview
-Keycloak is an open source identity and access management solution. This codebase extends provisioning 2 Factor Authentication (2FA) through non-interactve API methods ✨ 
+# Keycloak Multi-Factor Authentication Extension REST API
 
-Our project extends Keycloak with a custom RealmResourceProvider,JpaProviders etc. This allows for 2FA via API calls.
+The **Keycloak Multi-Factor Authentication Extension** provides seamless integration for enabling 2FA (Two-Factor Authentication) in Keycloak. This extension supports multiple 2FA methods including Email, OTP, and WebAuthn, making your Keycloak-based authentication more secure.
 
-## APIs
+---
 
+## Features
+- Supports 2FA via **Email**, **OTP**, and **WebAuthn**.
+- Easily configurable through Keycloak Authentication Flows.
+- REST API for interaction with 2FA features.
+- Angular integration example available for WebAuthn.
 
-### Generate 2FA data for a user
-Description: Generates 2FA data for a user to setup Totp on user's device.
+---
 
-Method: `GET`
+## Requirements
+- Keycloak instance running with HTTPS (mandatory for WebAuthn).
+- Add the extension JAR: `keycloak-multi-factor-authentication-extension-rest-api.jar` to your Keycloak project.
+- Get the latest JAR from our Discord: [Join Discord](https://discord.gg/5QEp5xK8Hw).
 
-Path: `http://localhost:8080/realms/<your-realm>/two-factor-auth/manage-2fa/{user_id}/totp/generate`
+---
 
-Response example: 
-```json
-{
-    "encodedTotpSecret": "OZJU43ZUIN2VO4BZKBYEWMLBOEZUSQKL",
-    "totpSecretQRCode": "iVBORw0KGgoAAAANSUhEUgAAAPYAAAD2AQAAAADNaUdlAAACmklEQVR4Xu2YPc6DMAyGXTEwcoTcpLkYEkhcrL1JjtCRAeHvfR1ABVVdvsEe6gFRP0Fy/Benol9lkavmLD9+1Zzlx6+as5C/ROT26lOrr0bne6elJYAMMfig+nwNhW946KS6dksyEIL30j6xCeVjlk5V7uDYUyTelBkeTUAjfmo0DoU+EHDJGo7v8ad/W8a/XaX/kB9efK+f5/vjQ3058Spj0lWQBFm1yB3IJAJH15GbTmW+g1vUBUXEdN32582tNaK0WdVoPaNYknJRDD7Qaix6sL4pc67fbPZ784au7QWmT2iNeLPl6ER7/J35gFh3E+rbkgBaZgI7URAOgzOzEqan+QYd7G9qEYXgkmD/IjX+0BbOD8m+CcFpKzj7N/NzUORnXRmEa50acvUqnJx3XQhOWzv07wcUKCLMh/V83vPTmaslJM7nBxZZ/wGfuJ3qX2/O/mhTF7i1Rquft/p25hxoMB/ao5jW+s/Rv7057G9Xxn9l6fCQhqen0nJcDMGt/9itZEwYDe04xOOIvzsXq2rEH1lp/YeXPE5iIbhqobawK+L+hJVIAmxn9683R8EAVa/SyROW09PPfX/OXHn0waF2oLTktcj3+Htz5Ge7FTn8LFwpHMKO+cubIyEJWNU6b6Vz6j/+POPAQ2k3jP9ikywOwSAcgvgv3IKwyFHaN+Ys0zUGt/4Nq8UuUeS4jh7x9+b16OutoHkTWLCIeznmH2dugkWsak6tvfCQoc9jcFY1bC30b9qv7u/3T28+8P8jU2Dqov3WGt/7jy/n/29EkGRVIxb/rIE4+g+bZOKkQ09jCKOE4jbkWH9UVtLJv558YPx5oOjI0u6ZpPY2xODwqzXsbEMOd5LrTLvZ78y/yY9fNWf58avmLP/mf9HIqC/AJ2L7AAAAAElFTkSuQmCC"
-}
+## Setup Instructions
+### 1. Add the Extension to Keycloak
+1. Download the JAR from the [Discord Channel](https://discord.gg/5QEp5xK8Hw).
+2. Copy the JAR file to the `standalone/deployments` directory of your Keycloak server.
+3. Restart the Keycloak server to load the extension.
+
+### 2. Configure 2FA in Keycloak
+1. **Login to Keycloak Admin Console**:
+    - Navigate to your desired realm.
+    - Open the **Authentication** menu.
+2. **Duplicate and Configure Direct Grant Flow**:
+    - Duplicate the `direct-grant` flow.
+    - Rename it (e.g., `multiple-factor-direct-grant`).
+    - Bind the new flow as `Grant Flow Type`.
+    - Select your new flow and:
+        - Remove the OTP step.
+        - Add a new step: `MultiFactor Authentication Direct Grant`.
+        - Set the requirement to `Required`.
+    - Configure the new step:
+        - Enable `Email 2nd Authentication` to enhance security.
+        - Save changes.
+
+---
+![Multi-Factor Flow](multicatior-flow.png)
+
+Multi-Factor Configurations
+![Multi-Factor Configurations](multi-factor-config.png)
+## REST API Endpoints
+
+### Retrieve Supported 2FA Methods
+- **URL**: `/realms/<realm>/two-factor-auth/methods?username=<username>`
+- **Method**: GET
+- **Response**:
+  ```json
+  ["webauthn", "otp", "email"]
+  ```
+  If the response is empty, no 2FA is required. Otherwise, proceed with the selected method.
+
+---
+
+### Email Authentication
+#### Send Verification Code
+- **URL**: `/realms/<realm>/two-factor-auth/send`
+- **Method**: POST
+- **Parameters**:
+    - `username`: User's username
+    - `2nd_factor_type`: email
+- **Response**:
+  ```json
+  {
+    "reference": "8b5faa26-3dd8-43b3-abc9-71eb643d046d",
+    "two_factor_type": "email"
+  }
+  ```
+#### Complete Login with Email
+- **URL**: `/realms/<realm>/protocol/openid-connect/token`
+- **Parameters**:
+  ```text
+  client_id=<clientId>&password=<password>&username=<username>&grant_type=password&reference=8b5faa26-3dd8-43b3-abc9-71eb643d046d&verification_code=548065&2nd_factor_type=email
+  ```
+
+---
+
+### OTP Authentication
+- **URL**: `/realms/<realm>/protocol/openid-connect/token`
+- **Method**: POST
+- **Parameters**:
+  ```text
+  client_id=<clientId>&password=<password>&username=<username>&grant_type=password&2nd_factor_type=otp&otp=340142
+  ```
+
+---
+
+### WebAuthn Authentication
+#### Environment Configuration
+Add the following environment variable to your server:
+```text
+KC_WEBAUTHN_DOMAIN=your-domain.com
 ```
-`encodedTotpSecret` can be used when it is not possible to scan a qr code.
 
+#### Registration
+1. **Start Registration**
+    - **URL**: `/realms/<realm>/two-factor-auth/webauth/<userId>/register/start`
+    - **Method**: POST
+    - **Body**:
+      ```json
+      {
+        "fullName": "John Doe",
+        "email": "johndoe@example.com"
+      }
+      ```
+    - **Response**:
+      ```json
+      {
+        "reference": "fea6cc6d-7c1c-4734-aced-488a8523fdcc",
+        "credentialCreationOptions": {
+          "rp": { "name": "CodeWithBisky", "id": "localhost" },
+          "user": { "name": "johndoe@example.com", "displayName": "John Doe", "id": "aAtceuoTSaiFooIjgpkQMw" },
+          "challenge": "z25VzTcgLnPGKB4vTOgylQPDkpdXg3tadRHmXfc06Hs",
+          "pubKeyCredParams": [{ "alg": -7, "type": "public-key" }],
+          "timeout": 30000,
+          "authenticatorSelection": { "userVerification": "discouraged" }
+        }
+      }
+      ```
 
-### Submit 2FA data for a user
-Description: Submits 2FA data for a user to enable Totp credential for user in KeyCloak.
+2. **Complete Registration**
+    - **URL**: `/realms/<realm>/two-factor-auth/webauth/<userId>/register/finish`
+    - **Method**: POST
+    - **Body**:
+      ```json
+      {
+        "reference": "fea6cc6d-7c1c-4734-aced-488a8523fdcc",
+        "credential": "<credentialDataFromFrontend>"
+      }
+      ```
 
-Method: `POST`
+#### Login
+1. **Start Login**
+    - **URL**: `/realms/<realm>/two-factor-auth/webauth/login/start`
+    - **Method**: POST
+    - **Body**:
+      ```json
+      { "username": "johndoe@example.com" }
+      ```
 
-Path: `http://localhost:8080/realms/<your-realm>/two-factor-auth/manage-2fa/{user_id}/totp/submit`
+2. **Complete Login**
+    - **URL**: `/realms/<realm>/protocol/openid-connect/token`
+    - **Method**: POST
+    - **Body**:
+      ```json
+      {
+        "client_id": "<clientId>",
+        "password": "<password>",
+        "username": "johndoe@example.com",
+        "grant_type": "password",
+        "credential": "<credentialDataFromFrontend>"
+      }
+      ```
 
-Request example:
-```json
-{
-    "deviceName": "totp",
-    "totpInitialCode": "709716",
-    "encodedTotpSecret": "OZJU43ZUIN2VO4BZKBYEWMLBOEZUSQKL",
-    "overwrite": true
-}
-```
+---
 
-Response: On success empty response with `204` status code will be returned.
+## Additional Resources
+- **Angular WebAuthn Integration**: [GitLab Repository](https://gitlab.com/code-with-bisky/spring-boot/fido/angular-app.git)
+- **Keycloak Docker Compose**: [GitLab Repository](https://gitlab.com/code-with-bisky/devops/keycloak.git) (branch: `feature/passkeys`)
+- **Discord Channel**: [CodeWithBisky Discord](https://discord.gg/5QEp5xK8Hw) for updates.
 
-Here `deviceName` refers to the device on which we want to enable 2FA. `totpInitialCode` refers to the initial
-6-digit code taken from 2FA Application (Authy, Google authenticator) by user. `encodedTotpSecret` refers to the 
-Totp secret that was received before by `generate-2fa` call. `overwrite` if set to true, overwrites existing 2FA data for
-that particular device.
+---
 
-## License
-Apache 2.0
-
+## Notes
+- **HTTPS is mandatory** for WebAuthn to function.
+- All latest changes and API updates are announced on the [CodeWithBisky Discord Channel](https://discord.gg/5QEp5xK8Hw).
