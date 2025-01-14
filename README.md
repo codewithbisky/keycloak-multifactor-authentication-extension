@@ -148,7 +148,7 @@ KC_WEBAUTHN_DOMAIN=your-domain.com
       ```json
       {
         "fullName": "John Doe",
-        "email": "johndoe@example.com"
+        "username": "johndoe@example.com"
       }
       ```
     - **Response**:
