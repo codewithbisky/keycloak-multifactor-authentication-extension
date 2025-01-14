@@ -3,7 +3,47 @@
 
 The **Keycloak Multi-Factor Authentication Extension** provides seamless integration for enabling 2FA (Two-Factor Authentication) in Keycloak. This extension supports multiple 2FA methods including Email, OTP, and WebAuthn, making your Keycloak-based authentication more secure.
 
+## Problem Statement
+
+A common challenge faced by developers when implementing WebAuthn Passkey with Keycloak is the reliance on Keycloak's default frontend for user authentication. Many teams prefer to maintain a custom frontend to align with their application's UI/UX.
+
+A frequently asked question is:
+
+> *How can I integrate Keycloak WebAuthn Passkey authentication using my own frontend and REST API, bypassing Keycloak's built-in frontend?*
+
+This issue has been discussed in various forums, with developers seeking ways to handle WebAuthn registration and authentication without redirecting users to Keycloak's UI.
+
+### Context
+Keycloak version: **26.0.7**
+
+Typical use case:
+- Developers already have a custom username and password flow working via Keycloak's API and frontend.
+- They seek to extend this setup to support WebAuthn Passkey registration and authentication through REST APIs.
+
 ---
+
+## Solution: Use the Custom Keycloak Extension
+
+We’ve developed a **custom Keycloak extension** that solves this problem by enabling WebAuthn Passkey registration and authentication via Keycloak’s REST APIs. This allows you to:
+
+- Maintain your own frontend for user interactions.
+- Register and authenticate users' devices using WebAuthn without redirecting to Keycloak’s frontend.
+- Seamlessly integrate with existing Keycloak API-based workflows.
+
+### Features of the Solution
+1. **WebAuthn Registration API**:
+   - Accepts client data from your frontend.
+   - Handles WebAuthn key generation and storage in Keycloak.
+
+2. **WebAuthn Authentication API**:
+   - Validates the passkey against stored credentials in Keycloak.
+   - Issues tokens for authenticated sessions.
+
+3. **Customizable UI**:
+   - Your frontend has full control over the registration and authentication flow.
+
+---
+
 
 ## Features
 - Supports 2FA via **Email**, **OTP**, and **WebAuthn**.
