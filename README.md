@@ -166,9 +166,16 @@ KC_WEBAUTHN_DOMAIN=your-domain.com
 - **Angular WebAuthn Integration**: [GitLab Repository](https://gitlab.com/code-with-bisky/spring-boot/fido/angular-app.git)
 - **Keycloak Docker Compose**: [GitLab Repository](https://gitlab.com/code-with-bisky/devops/keycloak.git) (branch: `feature/passkeys`)
 - **Discord Channel**: [CodeWithBisky Discord](https://discord.gg/5QEp5xK8Hw) for updates.
+- **Youtube Channel**: [CodeWithBisky Youtube_Channel](https://www.youtube.com/@CodeWithBisky) for latest tutorials.
+- **Website**: [CodeWithBisky Website](https://codewithbisky.com) for latest tutorials
 
 ---
 
 ## Notes
 - **HTTPS is mandatory** for WebAuthn to function.
 - All latest changes and API updates are announced on the [CodeWithBisky Discord Channel](https://discord.gg/5QEp5xK8Hw).
+
+## Angular Demo
+![Multi-Factor Flow](angular-two-factor-screen.png)
+## Choose Passkeys
+![Multi-Factor Flow](passkeys-selection.png)
