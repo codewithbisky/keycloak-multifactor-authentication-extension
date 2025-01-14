@@ -1,11 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    <groupId>parthdesai</groupId>
-    <artifactId>keycloak-two-factor-auth-rest-api</artifactId>
+    <groupId>com.codewithbisky</groupId>
+    <artifactId>keycloak-authentication-extension-rest-api</artifactId>
     <packaging>jar</packaging>
     <version>1.0-SNAPSHOT</version>
 
-    <name>Two factor auth rest api</name>
+    <name>MultiFactor authentication rest api</name>
     <description/>
     <modelVersion>4.0.0</modelVersion>
     <properties>
@@ -94,7 +94,7 @@
     </dependencies>
 
     <build>
-        <finalName>two-factor-auth-rest-api</finalName>
+        <finalName>keycloak-multi-factor-authentication-extension-rest-api</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
