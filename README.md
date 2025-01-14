@@ -1,26 +1,19 @@
-# Keycloak 2FA Rest API Provider
+# Keycloak MultiFactor Rest API Provider
 
 ## Overview
 Keycloak is an open source identity and access management solution. This codebase extends provisioning 2 Factor Authentication (2FA) through non-interactve API methods ✨ 
 
-Our project extends Keycloak with a custom RealmResourceProvider. This allows for 2FA via API calls. The APIs are authenticated with `manage-2fa` permission, and require the calling account to be a service account. 
-
-This extension also verifies that the target user is not service account for additional security check.
+Our project extends Keycloak with a custom RealmResourceProvider,JpaProviders etc. This allows for 2FA via API calls.
 
 ## APIs
 
-### Validation
-Validation is performed on all calls, following:
-1. The caller must be a service account for a client which has `manage-2fa` permission
-2. User id as part of the path needs to point to valid user
-3. User must not be a service account
 
 ### Generate 2FA data for a user
 Description: Generates 2FA data for a user to setup Totp on user's device.
 
 Method: `GET`
 
-Path: `http://localhost:8080/realms/<your-realm>/two-factor-auth/manage-2fa/{user_id}/generate-2fa`
+Path: `http://localhost:8080/realms/<your-realm>/two-factor-auth/manage-2fa/{user_id}/totp/generate`
 
 Response example: 
 ```json
@@ -37,12 +30,12 @@ Description: Submits 2FA data for a user to enable Totp credential for user in K
 
 Method: `POST`
 
-Path: `http://localhost:8080/realms/<your-realm>/two-factor-auth/manage-2fa/{user_id}/submit-2fa`
+Path: `http://localhost:8080/realms/<your-realm>/two-factor-auth/manage-2fa/{user_id}/totp/submit`
 
 Request example:
 ```json
 {
-    "deviceName": "test",
+    "deviceName": "totp",
     "totpInitialCode": "709716",
     "encodedTotpSecret": "OZJU43ZUIN2VO4BZKBYEWMLBOEZUSQKL",
     "overwrite": true
@@ -55,36 +48,6 @@ Here `deviceName` refers to the device on which we want to enable 2FA. `totpInit
 6-digit code taken from 2FA Application (Authy, Google authenticator) by user. `encodedTotpSecret` refers to the 
 Totp secret that was received before by `generate-2fa` call. `overwrite` if set to true, overwrites existing 2FA data for
 that particular device.
-
-If caller do not want to support multiple devices, it is perfectly fine to only pass one const device name.
-
-
-### Login
-Description: Login with Google Authenticator 6-digit code
-
-Method: `POST`
-
-Path: `http://localhost:8080/realms/<your-realm>/protocol/openid-connect/token`
-
-Request example:
-```curl
-curl --location 'http://localhost:808/realms/<your-realm>/protocol/openid-connect/token' \
---header 'Content-Type: application/x-www-form-urlencoded' \
---data-urlencode 'client_id=authenticationClientId' \
---data-urlencode 'username=your-username' \
---data-urlencode 'password=your-password' \
---data-urlencode 'grant_type=password' \
---data-urlencode 'otp=your 6 digit OTP'
-```
-Response: On success you get Bearer Token.
-
-
-
-
-## Creators
-Protoreality Games
-https://protorealitygames.com/
-Created: June 2022
 
 ## License
 Apache 2.0

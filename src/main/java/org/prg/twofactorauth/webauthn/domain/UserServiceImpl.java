@@ -377,15 +377,14 @@ public class UserServiceImpl implements UserService {
 
         // Find the user in the user database
         UserAccount user =
-                findUserEmail(loginStartRequest.getEmail())
-                        .orElseThrow(() -> new RuntimeException("Email does not exist"));
+                findUserEmail(loginStartRequest.getUsername())
+                        .orElseThrow(() -> new TwoFactoBaseException("Username does not exist"));
 
         // make the assertion request to send to the client
         StartAssertionOptions options =
                 StartAssertionOptions.builder()
                         .timeout(60_000)
-                        .username(loginStartRequest.getEmail())
-//                             .userHandle(YubicoUtils.toByteArray(UUID.fromString(user.getId())))
+                        .username(loginStartRequest.getUsername())
                         .build();
         AssertionRequest assertionRequest = relyingParty(this,user).startAssertion(options);
 
@@ -397,7 +396,7 @@ public class UserServiceImpl implements UserService {
         loginFlowEntity.setId(loginStartResponse.getReference());
         loginFlowEntity.setStartRequest(toJson(loginStartRequest));
         loginFlowEntity.setStartResponse(toJson(loginStartResponse));
-        loginFlowEntity.setUsername(loginStartRequest.getEmail());
+        loginFlowEntity.setUsername(loginStartRequest.getUsername());
         loginFlowEntity.setAssertionRequest(assertionRequest.toJson());
         saveLoginFlowEntityNative(loginFlowEntity);
         return loginStartResponse;
