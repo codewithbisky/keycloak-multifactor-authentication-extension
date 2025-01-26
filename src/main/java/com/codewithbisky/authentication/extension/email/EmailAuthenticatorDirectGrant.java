@@ -179,9 +179,10 @@ public class EmailAuthenticatorDirectGrant implements Authenticator {
         }
 
         Map<String, Object> mailBodyAttributes = new HashMap<>();
-        mailBodyAttributes.put("username", user.getUsername());
+        mailBodyAttributes.put("username", user.getFirstName());
         mailBodyAttributes.put("code", code);
         mailBodyAttributes.put("ttl", ttl);
+        mailBodyAttributes.put("realmName", realm.getDisplayName());
 
         String realmName = realm.getDisplayName() != null ? realm.getDisplayName() : realm.getName();
         List<Object> subjectParams = List.of(realmName);
