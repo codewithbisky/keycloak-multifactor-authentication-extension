@@ -17,14 +17,12 @@ services:
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.0.7
-    command:
-      - start
-      - --transaction-xa-enabled=false
+    command: start
     restart: always
     links:
       - postgres
     ports:
-      - "9082:8080"
+      - "9081:8080"
       - "9443:8443"
     environment:
       KEYCLOAK_ADMIN : admin
@@ -40,6 +38,7 @@ services:
       KC_HTTPS_CERTIFICATE_FILE: /opt/keycloak/conf/server.crt
       KC_HTTPS_CERTIFICATE_KEY_FILE: /opt/keycloak/conf/server.key
       KC_WEBAUTHN_DOMAIN: localhost
+      KC_HTTP_RELATIVE_PATH: /keycloak
 
     networks:
       - local
