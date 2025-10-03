@@ -1,0 +1,36 @@
+<div class="container">
+  <h2>Select a Two-Factor Authentication Method</h2>
+  <ul>
+    <li *ngFor="let method of twoFactorMethods">
+      <label>
+        <input
+          type="radio"
+          name="twoFactorMethod"
+          [value]="method"
+          [(ngModel)]="selectedMethod"
+        />
+        {{ method | uppercase }}
+      </label>
+    </li>
+  </ul>
+
+  <div *ngIf="selectedMethod === 'otp' || reference" class="otp-container">
+    <label for="otp" class="otp-label">Enter OTP:</label>
+    <input
+      type="number"
+      id="otp"
+      [(ngModel)]="otpCode"
+      maxlength="6"
+      placeholder="Enter your 6-digit OTP"
+      class="otp-input"
+    />
+  </div>
+
+  <button
+    (click)="onContinue()"
+    [disabled]="!selectedMethod || (selectedMethod === 'otp' && !otpCode)"
+    class="continue-btn"
+  >
+    Continue
+  </button>
+</div>

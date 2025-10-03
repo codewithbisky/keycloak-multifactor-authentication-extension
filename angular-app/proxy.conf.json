@@ -1,0 +1,21 @@
+{
+  "/keycloak": {
+    "target": "https://localhost:9443",
+    "secure": false,
+    "logLevel": "debug",
+    "changeOrigin": true
+  },
+  "/realms": {
+    "target": "https://localhost:9443",
+    "secure": false,
+    "logLevel": "debug",
+    "changeOrigin": true
+  },
+  "/auth": {
+    "target": "https://localhost:9443",
+    "secure": false,
+    "logLevel": "debug",
+    "changeOrigin": true
+  }
+}
+

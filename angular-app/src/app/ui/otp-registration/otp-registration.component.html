@@ -1,0 +1,96 @@
+<main class="main">
+  <div class="container">
+    <div class="login-container">
+      <div class="login-box">
+        <h2>Setup OTP Authentication</h2>
+
+        <div *ngIf="isLoading" class="loading-container">
+          <p>Loading...</p>
+        </div>
+
+        <div *ngIf="errorMessage" class="error-message">
+          {{ errorMessage }}
+        </div>
+
+        <div *ngIf="successMessage" class="success-message">
+          {{ successMessage }}
+        </div>
+
+        <div *ngIf="otpSecret && !isLoading" class="otp-setup-container">
+          <div class="qr-code-section">
+            <h3>Step 1: Scan QR Code</h3>
+            <p class="instruction-text">
+              Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)
+            </p>
+            <div class="qr-code-container">
+              <img *ngIf="qrCodeDataUrl"
+                   [src]="qrCodeDataUrl"
+                   alt="QR Code"
+                   class="qr-code-image"
+                   (error)="onImageError($event)"/>
+              <div *ngIf="!qrCodeDataUrl && !isLoading" class="qr-code-error">
+                <p>QR Code not available</p>
+                <p class="text-sm">Please use manual entry below</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="manual-entry-section">
+            <h3>Or enter manually:</h3>
+            <div class="secret-code">
+              <code>{{ otpSecret?.encodedTotpSecret || 'Loading...' }}</code>
+            </div>
+          </div>
+
+          <form [formGroup]="formGroup" (ngSubmit)="completeRegistration()" class="otp-form">
+            <div class="form-group">
+              <label for="deviceName">Device Name</label>
+              <input
+                id="deviceName"
+                type="text"
+                required
+                formControlName="deviceName"
+                placeholder="e.g., My Phone"
+                [disabled]="isLoading"
+              />
+              <small class="help-text">Give this device a name to identify it later</small>
+            </div>
+
+            <div class="form-group">
+              <label for="otpCode">Verification Code</label>
+              <input
+                id="otpCode"
+                type="text"
+                required
+                formControlName="otpCode"
+                placeholder="Enter 6-digit code"
+                maxlength="6"
+                [disabled]="isLoading"
+              />
+              <small class="help-text">Enter the 6-digit code from your authenticator app</small>
+            </div>
+
+            <div class="button-group">
+              <button
+                type="submit"
+                class="btn submit-button"
+                [disabled]="!formGroup.valid || isLoading"
+              >
+                Complete Setup
+              </button>
+              <button
+                type="button"
+                class="btn cancel-button"
+                (click)="cancel()"
+                [disabled]="isLoading"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+

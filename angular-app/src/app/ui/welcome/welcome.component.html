@@ -1,0 +1,41 @@
+<div class="flex flex-col md:flex-row h-screen">
+  <div class="bg-gray-50 flex-1 p-10 md:w-1/2">
+    <img src="assets/passkey-logo.jpg" alt="Passkey Logo" class="mb-8" height="50" width="50">
+    <h1 class="text-4xl font-bold mb-4">What is a passkey?</h1>
+    <p class="text-lg mb-4">
+      Passkeys are like passwords but better. They're better because they aren’t created insecurely by humans and
+      because they use public key cryptography to create much more secure experiences.
+    </p>
+    <p class="text-lg">
+      But passkeys aren’t a new thing. It’s just a new name starting to be used for WebAuthn/FIDO2 credentials that
+      enable fully passwordless experiences. These types of credentials are also called discoverable credentials or
+      sometimes resident credentials.
+    </p>
+  </div>
+
+  <div class="bg-white flex-1 p-10 md:w-1/2 flex flex-col items-center justify-center">
+    <h2 class="text-xl font-bold mb-4" *ngIf="firstName || lastName">
+      Welcome {{ firstName }} {{ lastName }}!
+    </h2>
+    <h2 class="text-xl font-bold mb-4" *ngIf="!firstName && !lastName && displayName">
+      Welcome {{ displayName }}!
+    </h2>
+    <p class="text-center text-green-600 mb-6">
+      Setup 2-factor authentication for enhanced security
+    </p>
+
+    <div class="flex flex-col gap-3 w-full max-w-xs">
+      <button class="bg-blue-500 text-white py-3 px-6 rounded-lg hover:bg-blue-600 transition-colors font-medium shadow-md" (click)="createPasskey()">
+        Create Passkey
+      </button>
+
+      <button class="bg-purple-500 text-white py-3 px-6 rounded-lg hover:bg-purple-600 transition-colors font-medium shadow-md" (click)="setupOtp()">
+        Setup OTP Authentication
+      </button>
+    </div>
+
+    <button class="text-blue-500 text-sm hover:underline mt-6" (click)="signOut()">
+      Sign Out
+    </button>
+  </div>
+</div>
