@@ -10,8 +10,6 @@ import java.util.Set;
 public class UserAccountEntity {
 
     @Id
-    @GeneratedValue(generator = "UUID")
-    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
     @Column(name = "id", nullable = false)
     private String id;
 
