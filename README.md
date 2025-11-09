@@ -135,10 +135,72 @@ Multi-Factor Configurations
 
 ### WebAuthn Authentication
 #### Environment Configuration
-Add the following environment variable to your server:
-```text
-KC_WEBAUTHN_DOMAIN=your-domain.com
+Add the following environment variables to your server:
+
+```bash
+# Required: Domain for the Relying Party ID
+KC_WEBAUTHN_DOMAIN=example.com
+
+# Optional: Display name for the Relying Party (default: "CodeWithBisky")
+KC_WEBAUTHN_NAME=MyApp
+
+# Optional: Comma-separated list of allowed origins for web clients
+# If not set, defaults to localhost origins for development
+KC_WEBAUTHN_ALLOWED_ORIGINS=https://example.com,https://www.example.com
+
+# Optional: Android app package name (enables mobile WebAuthn support)
+KC_WEBAUTHN_ANDROID_PACKAGE_NAME=com.example.myapp
+
+# Optional: Android SHA-256 certificate fingerprints (comma-separated)
+# Used for Digital Asset Links verification
+KC_WEBAUTHN_ANDROID_SHA256_FINGERPRINTS=AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99
+
+# Optional: iOS app bundle ID (enables iOS WebAuthn support)
+KC_WEBAUTHN_IOS_BUNDLE_ID=com.example.myapp
 ```
+
+**Environment Variable Details**:
+
+| Variable | Required | Description | Example |
+|----------|----------|-------------|---------|
+| `KC_WEBAUTHN_DOMAIN` | ✅ Yes | The domain for the Relying Party ID | `example.com` |
+| `KC_WEBAUTHN_NAME` | ❌ No | Display name for the Relying Party | `MyApp` |
+| `KC_WEBAUTHN_ALLOWED_ORIGINS` | ❌ No | Comma-separated list of allowed origins for web clients. Defaults to localhost if not set. | `https://example.com,https://www.example.com` |
+| `KC_WEBAUTHN_ANDROID_PACKAGE_NAME` | ❌ No | Android app package name. When set, enables mobile origin support. | `com.example.myapp` |
+| `KC_WEBAUTHN_ANDROID_SHA256_FINGERPRINTS` | ❌ No | Comma-separated SHA-256 certificate fingerprints for Android app | `AA:BB:CC:...` |
+| `KC_WEBAUTHN_IOS_BUNDLE_ID` | ❌ No | iOS app bundle ID. When set, enables iOS origin support. | `com.example.myapp` |
+
+**Notes**:
+- The primary domain origin (`https://{KC_WEBAUTHN_DOMAIN}`) is always added automatically
+- If `KC_WEBAUTHN_ALLOWED_ORIGINS` is not set, defaults to: `http://localhost`, `http://localhost:3000`, `http://localhost:3443`, `https://localhost:3443`
+- When `KC_WEBAUTHN_ANDROID_PACKAGE_NAME` or `KC_WEBAUTHN_IOS_BUNDLE_ID` is set, origin validation is disabled to support mobile platforms
+- Mobile security is ensured by platform-level verification (Digital Asset Links for Android, Associated Domains for iOS)
+
+**Mobile Platform Support**:
+
+For **Android** apps:
+1. Set `KC_WEBAUTHN_ANDROID_PACKAGE_NAME` to your app's package name
+2. Set `KC_WEBAUTHN_ANDROID_SHA256_FINGERPRINTS` to your app's signing certificate fingerprints
+3. Host a Digital Asset Links file at `https://{KC_WEBAUTHN_DOMAIN}/.well-known/assetlinks.json`:
+   ```json
+   [
+     {
+       "relation": ["delegate_permission/common.handle_all_urls", "delegate_permission/common.get_login_creds"],
+       "target": {
+         "namespace": "android_app",
+         "package_name": "com.example.myapp",
+         "sha256_cert_fingerprints": [
+           "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99"
+         ]
+       }
+     }
+   ]
+   ```
+
+For **iOS** apps:
+1. Set `KC_WEBAUTHN_IOS_BUNDLE_ID` to your app's bundle ID
+2. Host an Associated Domains file at `https://{KC_WEBAUTHN_DOMAIN}/.well-known/apple-app-site-association`
+3. Add the associated domain to your app's entitlements
 
 #### Registration
 1. **Start Registration**
