@@ -92,77 +92,38 @@ public class CredentialRepositoryImpl implements CredentialRepository {
     public Optional<RegisteredCredential> lookup(ByteArray credentialId, ByteArray userHandle) {
         // user can have muliple credentials so we are looking first for the user,
         // then for a credential that matches;
-        logger.info("CredentialRepositoryImpl lookup credentialId " + credentialId + " userHandle " + userHandle);
-
-        // Debug: Convert userHandle to UUID to see what user ID it represents
-        try {
-            UUID userIdFromHandle = YubicoUtils.toUUID(userHandle);
-            logger.info("CredentialRepositoryImpl lookup - userHandle converts to UUID: " + userIdFromHandle.toString());
-        } catch (Exception e) {
-            logger.error("CredentialRepositoryImpl lookup - failed to convert userHandle to UUID", e);
-        }
-
         if (userAccount.isPresent()) {
-            logger.info("CredentialRepositoryImpl lookup - using provided userAccount: " + userAccount.get().getId());
-
-            Optional<RegisteredCredential> result = userAccount
+            return userAccount
                     .map(user -> user.getCredentials())
                     .orElse(Set.of())
                     .stream()
                     .filter(
                             cred -> {
                                 try {
-                                    boolean matches = credentialId.equals(ByteArray.fromBase64Url(cred.getKeyId()));
-                                    logger.info("CredentialRepositoryImpl lookup - checking credential " + cred.getKeyId() + " for user " + cred.getUserid() + ", matches: " + matches);
-                                    return matches;
+                                    return credentialId.equals(ByteArray.fromBase64Url(cred.getKeyId()));
                                 } catch (Base64UrlException e) {
                                     throw new RuntimeException(e);
                                 }
                             })
                     .findFirst()
-                    .map(fidoCred -> {
-                        RegisteredCredential regCred = toRegisteredCredential(fidoCred);
-                        logger.info("CredentialRepositoryImpl lookup - found credential with userHandle: " + regCred.getUserHandle());
-                        return regCred;
-                    });
-
-            if (result.isPresent()) {
-                logger.info("CredentialRepositoryImpl lookup - returning credential from userAccount");
-            } else {
-                logger.warn("CredentialRepositoryImpl lookup - no matching credential found in userAccount");
-            }
-
-            return result;
+                    .map(CredentialRepositoryImpl::toRegisteredCredential);
         }
 
-        logger.info("CredentialRepositoryImpl lookup - no userAccount provided, looking up by userHandle");
-        UUID userIdFromHandle = YubicoUtils.toUUID(userHandle);
-        logger.info("CredentialRepositoryImpl lookup - searching for user with ID: " + userIdFromHandle.toString());
-
         return this.userService
-                .findUserById(userIdFromHandle.toString())
-                .map(user -> {
-                    logger.info("CredentialRepositoryImpl lookup - found user: " + user.getId() + ", email: " + user.getEmail());
-                    return user.getCredentials();
-                })
+                .findUserById(YubicoUtils.toUUID(userHandle).toString())
+                .map(user -> user.getCredentials())
                 .orElse(Set.of())
                 .stream()
                 .filter(
                         cred -> {
                             try {
-                                boolean matches = credentialId.equals(ByteArray.fromBase64Url(cred.getKeyId()));
-                                logger.info("CredentialRepositoryImpl lookup - checking credential " + cred.getKeyId() + " for user " + cred.getUserid() + ", matches: " + matches);
-                                return matches;
+                                return credentialId.equals(ByteArray.fromBase64Url(cred.getKeyId()));
                             } catch (Base64UrlException e) {
                                 throw new RuntimeException(e);
                             }
                         })
                 .findFirst()
-                .map(fidoCred -> {
-                    RegisteredCredential regCred = toRegisteredCredential(fidoCred);
-                    logger.info("CredentialRepositoryImpl lookup - found credential with userHandle: " + regCred.getUserHandle());
-                    return regCred;
-                });
+                .map(CredentialRepositoryImpl::toRegisteredCredential);
     }
 
     @Override

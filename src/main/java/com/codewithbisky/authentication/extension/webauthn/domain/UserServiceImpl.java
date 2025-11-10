@@ -262,7 +262,6 @@ public class UserServiceImpl implements UserService {
 
         // Extract origin from client data JSON for mobile platform support
         String clientOrigin = extractOriginFromClientData(pkc);
-        logger.info("Extracted client origin: " + clientOrigin);
 
         FinishRegistrationOptions options =
                 FinishRegistrationOptions.builder()
@@ -272,10 +271,7 @@ public class UserServiceImpl implements UserService {
 
         RegistrationResult registrationResult = RelyingPartyConfiguration.relyingParty(this, null, clientOrigin).finishRegistration(options);
 
-        // Debug: Log the user ID from the credential creation options
         String userIdFromOptions = YubicoUtils.toUUID(credentialCreationOptions.getUser().getId()).toString();
-        logger.info("finishRegistration - User ID from credentialCreationOptions: " + userIdFromOptions);
-        logger.info("finishRegistration - User ID ByteArray: " + credentialCreationOptions.getUser().getId());
 
         var fidoCredential =
                 new FidoCredential(
@@ -283,8 +279,6 @@ public class UserServiceImpl implements UserService {
                         registrationResult.getKeyId().getType().name(),
                         userIdFromOptions,
                         registrationResult.getPublicKeyCose().getBase64Url());
-
-        logger.info("finishRegistration - Created FidoCredential with keyId: " + fidoCredential.getKeyId() + ", userId: " + fidoCredential.getUserid());
 
         addCredential(fidoCredential);
 
@@ -530,7 +524,6 @@ public class UserServiceImpl implements UserService {
 
         // Extract origin from client data JSON for mobile platform support
         String clientOrigin = extractOriginFromClientDataAssertion(pkc);
-        logger.info("Extracted client origin for login: " + clientOrigin);
 
         FinishAssertionOptions options =
                 FinishAssertionOptions.builder()
@@ -540,16 +533,6 @@ public class UserServiceImpl implements UserService {
 
         String userName = loginFlowEntity.getUsername();
         UserAccount userAccount = findUserEmail(userName).orElseThrow();
-
-        // Debug: Log the user account details
-        logger.info("finishLogin - UserAccount ID: " + userAccount.getId());
-        logger.info("finishLogin - UserAccount email: " + userAccount.getEmail());
-        logger.info("finishLogin - UserAccount has " + userAccount.getCredentials().size() + " credentials");
-
-        // Debug: Log each credential's user ID
-        for (FidoCredential cred : userAccount.getCredentials()) {
-            logger.info("finishLogin - Credential " + cred.getKeyId() + " belongs to user: " + cred.getUserid());
-        }
 
         AssertionResult assertionResult = RelyingPartyConfiguration.relyingParty(this, userAccount, clientOrigin).finishAssertion(options);
         loginFlowEntity.setAssertionResult(toJson(assertionResult));

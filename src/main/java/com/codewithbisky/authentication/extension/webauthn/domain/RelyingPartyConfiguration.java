@@ -36,8 +36,6 @@ public class RelyingPartyConfiguration {
 
         String domain = System.getenv("KC_WEBAUTHN_DOMAIN");
         String webauthnName = System.getenv("KC_WEBAUTHN_NAME");
-        String androidPackageName = System.getenv("KC_WEBAUTHN_ANDROID_PACKAGE_NAME");
-        String androidSha256Fingerprints = System.getenv("KC_WEBAUTHN_ANDROID_SHA256_FINGERPRINTS");
         String iosBundleId = System.getenv("KC_WEBAUTHN_IOS_BUNDLE_ID");
         String allowedOriginsEnv = System.getenv("KC_WEBAUTHN_ALLOWED_ORIGINS");
 
@@ -78,26 +76,14 @@ public class RelyingPartyConfiguration {
             logger.info("Using default localhost origins (no KC_WEBAUTHN_ALLOWED_ORIGINS configured)");
         }
 
-        // Add Android origins if configured
-        if (androidPackageName != null && androidSha256Fingerprints != null) {
-            // Android origins use SHA-1 hash, not SHA-256
-            // The format is: android:apk-key-hash:<base64url-encoded-sha1-hash>
-            // We need to accept any android:apk-key-hash origin since we can't predict the exact hash
-            // The security is ensured by Digital Asset Links verification on the Android side
-            logger.info("Android WebAuthn configured for package: " + androidPackageName);
-            logger.info("Android SHA-256 fingerprints: " + androidSha256Fingerprints);
-        }
-
         // Add iOS origins if configured
         if (iosBundleId != null) {
             allowedOrigins.add("ios:bundle-id:" + iosBundleId);
-            logger.info("iOS WebAuthn configured for bundle ID: " + iosBundleId);
         }
 
         // Add client origin if provided (for mobile platforms)
         if (clientOrigin != null && !clientOrigin.isEmpty()) {
             allowedOrigins.add(clientOrigin);
-            logger.info("Added client origin from request: " + clientOrigin);
         }
 
         /**
@@ -125,10 +111,6 @@ public class RelyingPartyConfiguration {
          * This is safe because the platform-level verification provides the security.
          */
 
-        // Check if mobile platforms are configured
-        boolean mobileEnabled = (androidPackageName != null && !androidPackageName.isEmpty())
-                             || (iosBundleId != null && !iosBundleId.isEmpty());
-
         RelyingParty.RelyingPartyBuilder builder = RelyingParty.builder()
                 .identity(rpIdentity)
                 .credentialRepository(credentialRepositoryImpl)
@@ -136,19 +118,7 @@ public class RelyingPartyConfiguration {
                 .allowOriginSubdomain(true)
                 .validateSignatureCounter(false); // Disable signature counter for mobile compatibility
 
-        if (mobileEnabled) {
-            logger.info("=== Mobile WebAuthn Configuration ===");
-            logger.info("Android package: " + (androidPackageName != null ? androidPackageName : "not configured"));
-            logger.info("iOS bundle ID: " + (iosBundleId != null ? iosBundleId : "not configured"));
-            logger.info("Origin validation: RELAXED for mobile support");
-            logger.info("Security model: Platform-level verification (Digital Asset Links / Associated Domains)");
-            logger.warn("IMPORTANT: Ensure Digital Asset Links (Android) and Associated Domains (iOS) are properly configured!");
-            logger.info("Allowed origins (including client origin): " + allowedOrigins);
-            logger.info("=====================================");
-        } else {
-            logger.info("Web-only WebAuthn configuration");
-            logger.info("Allowed origins: " + allowedOrigins);
-        }
+
 
         // Always set origins - this includes web origins and dynamically added mobile origins
         builder.origins(allowedOrigins);
