@@ -259,13 +259,18 @@ public class UserServiceImpl implements UserService {
             logger.error("parseRegistrationResponseJson ",e);
             throw e;
         }
+
+        // Extract origin from client data JSON for mobile platform support
+        String clientOrigin = extractOriginFromClientData(pkc);
+        logger.info("Extracted client origin: " + clientOrigin);
+
         FinishRegistrationOptions options =
                 FinishRegistrationOptions.builder()
                         .request(credentialCreationOptions)
                         .response(pkc)
                         .build();
 
-        RegistrationResult registrationResult = RelyingPartyConfiguration.relyingParty(this,null).finishRegistration(options);
+        RegistrationResult registrationResult = RelyingPartyConfiguration.relyingParty(this, null, clientOrigin).finishRegistration(options);
 
         var fidoCredential =
                 new FidoCredential(
@@ -281,6 +286,50 @@ public class UserServiceImpl implements UserService {
         registrationFinishResponse.setRegistrationComplete(true);
         logFinishStep(finishRequest, registrationResult, registrationFinishResponse);
         return registrationFinishResponse;
+    }
+
+    /**
+     * Extract origin from client data JSON for mobile platform support (registration)
+     * This allows us to dynamically add the Android/iOS origin to the allowed origins
+     */
+    private String extractOriginFromClientData(PublicKeyCredential<AuthenticatorAttestationResponse, ClientRegistrationExtensionOutputs> pkc) {
+        try {
+            // Get the client data JSON from the response
+            com.yubico.webauthn.data.ByteArray clientDataJSON = pkc.getResponse().getClientDataJSON();
+            String clientDataString = new String(clientDataJSON.getBytes(), java.nio.charset.StandardCharsets.UTF_8);
+
+            // Parse the JSON to extract the origin field
+            com.fasterxml.jackson.databind.JsonNode jsonNode = JsonUtils.mapper.readTree(clientDataString);
+            String origin = jsonNode.get("origin").asText();
+
+            logger.info("Extracted origin from client data (registration): " + origin);
+            return origin;
+        } catch (Exception e) {
+            logger.error("Failed to extract origin from client data", e);
+            return null;
+        }
+    }
+
+    /**
+     * Extract origin from client data JSON for mobile platform support (assertion/login)
+     * This allows us to dynamically add the Android/iOS origin to the allowed origins
+     */
+    private String extractOriginFromClientDataAssertion(PublicKeyCredential<AuthenticatorAssertionResponse, ClientAssertionExtensionOutputs> pkc) {
+        try {
+            // Get the client data JSON from the response
+            com.yubico.webauthn.data.ByteArray clientDataJSON = pkc.getResponse().getClientDataJSON();
+            String clientDataString = new String(clientDataJSON.getBytes(), java.nio.charset.StandardCharsets.UTF_8);
+
+            // Parse the JSON to extract the origin field
+            com.fasterxml.jackson.databind.JsonNode jsonNode = JsonUtils.mapper.readTree(clientDataString);
+            String origin = jsonNode.get("origin").asText();
+
+            logger.info("Extracted origin from client data (assertion): " + origin);
+            return origin;
+        } catch (Exception e) {
+            logger.error("Failed to extract origin from client data", e);
+            return null;
+        }
     }
 
     private void logFinishStep(
@@ -471,6 +520,11 @@ public class UserServiceImpl implements UserService {
         String string1 = JsonUtils.mapper.writerWithDefaultPrettyPrinter().writeValueAsString(parsed);
         PublicKeyCredential<AuthenticatorAssertionResponse, ClientAssertionExtensionOutputs>
         pkc = PublicKeyCredential.parseAssertionResponseJson(string1);
+
+        // Extract origin from client data JSON for mobile platform support
+        String clientOrigin = extractOriginFromClientDataAssertion(pkc);
+        logger.info("Extracted client origin for login: " + clientOrigin);
+
         FinishAssertionOptions options =
                 FinishAssertionOptions.builder()
                         .request(assertionRequest)
@@ -479,7 +533,7 @@ public class UserServiceImpl implements UserService {
 
         String userName = loginFlowEntity.getUsername();
         UserAccount userAccount = findUserEmail(userName).orElseThrow();
-        AssertionResult assertionResult = RelyingPartyConfiguration.relyingParty(this,userAccount).finishAssertion(options);
+        AssertionResult assertionResult = RelyingPartyConfiguration.relyingParty(this, userAccount, clientOrigin).finishAssertion(options);
         loginFlowEntity.setAssertionResult(toJson(assertionResult));
         loginFlowEntity.setSuccessfulLogin(assertionResult.isSuccess());
         updateLoginFlowEntityNative(loginFlowEntity.getId(), loginFlowEntity.getAssertionResult(), loginFlowEntity.getSuccessfulLogin());
